@@ -12917,6 +12917,22 @@ type Props = {
   closeOnEscape?: boolean;
   footerAdditionalComponents?: ReactNode;
 };
+⋮----
+export const ConfirmDialog = ({
+  title,
+  onConfirm,
+  onCancel,
+  confirmButtonText,
+  cancelButtonText,
+  contentClass,
+  children,
+  disabled = false,
+  confirmButtonClass,
+  confirmButtonColor,
+  width,
+  closeOnEscape = false,
+  footerAdditionalComponents,
+}: Props) =>
 
 ================
 File: src/renderer/src/components/common/DatePicker.css
@@ -13750,8 +13766,6 @@ type Props = {
   onCommentSubmit: (comment: string, createNewTask: boolean) => void;
   onCommentCancel: () => void;
 };
-⋮----
-onLineClick=
 
 ================
 File: src/renderer/src/components/ContextFiles/EmptyContextInfo.tsx
@@ -14094,8 +14108,6 @@ title=
 ⋮----
 className=
 ⋮----
-onLineClick=
-⋮----
 {/* Footer with Commit Section */}
 ⋮----
 {/* Error Display */}
@@ -14193,8 +14205,6 @@ className=
                               expandedItems={expanded}
 setExpandedItems=
 ⋮----
-setExpandedItems=
-⋮----
 onClose=
 ⋮----
 openInWindowTitle=
@@ -14240,8 +14250,6 @@ const checkChild = (childKey: string | number) =>
 // eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
 <Tooltip content=
-⋮----
-onFileDiffClick=
 
 ================
 File: src/renderer/src/components/extensions/ExtensionComponentWrapper.tsx
@@ -14462,7 +14470,6 @@ checked=
 {/* Auto-scroll */}
 ⋮----
 {/* Clear logs button */}
-<Button onClick=
 ⋮----
 {/* Clear confirmation dialog */}
 ⋮----
@@ -16204,6 +16211,8 @@ type Props = {
   onChange: (updated: AnthropicCompatibleProvider) => void;
 };
 ⋮----
+export const AnthropicCompatibleParameters = (
+⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
@@ -16556,6 +16565,8 @@ type Props = {
   onChange: (updated: GpustackProvider) => void;
 };
 ⋮----
+export const GpustackParameters = (
+⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
@@ -16628,6 +16639,8 @@ type Props = {
   onChange: (updated: LitellmProvider) => void;
 };
 ⋮----
+export const LitellmParameters = (
+⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
@@ -16648,6 +16661,8 @@ type Props = {
   provider: LmStudioProvider;
   onChange: (updated: LmStudioProvider) => void;
 };
+⋮----
+export const LmStudioParameters = (
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16684,6 +16699,8 @@ type Props = {
   provider: OllamaProvider;
   onChange: (updated: OllamaProvider) => void;
 };
+⋮----
+export const OllamaParameters = (
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16775,6 +16792,8 @@ type Props = {
   provider: OpenAiCompatibleProvider;
   onChange: (updated: OpenAiCompatibleProvider) => void;
 };
+⋮----
+export const OpenAiCompatibleParameters = (
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -17412,6 +17431,8 @@ const handleBulkToggleHidden = async (modelIds: string[], isHidden: boolean) =>
 <ModalOverlayLayout title=
 ⋮----
 // Show provider configuration form
+⋮----
+onCancel=
 
 ================
 File: src/renderer/src/components/ModelLibrary/ModelParameterOverrides.tsx
@@ -18285,25 +18306,6 @@ type Props = {
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggleFilesSidebarCollapse?: () => void;
 };
-⋮----
-export const FilesContextInfoContent = ({
-  baseDir,
-  taskId,
-  allFiles,
-  contextFiles,
-  tokensInfo,
-  aiderTotalCost,
-  maxInputTokens,
-  clearMessages,
-  runCommand,
-  resetTask,
-  mode,
-  showFileDialog,
-  task,
-  updateTask,
-  refreshAllFiles,
-  onToggleFilesSidebarCollapse,
-}: Props) =>
 
 ================
 File: src/renderer/src/components/project/MobileSidebar.tsx
@@ -18363,8 +18365,6 @@ export const MobileSidebar = ({
 className=
 ⋮----
 <div onClick=
-⋮----
-showFileDialog=
 
 ================
 File: src/renderer/src/components/project/NoProjectsOpen.tsx
@@ -20370,6 +20370,8 @@ type RecordingDialogProps = {
 const handleConfirm = () =>
 ⋮----
 title=
+⋮----
+value=
 ⋮----
 // Parse the value into an array of shortcuts
 ⋮----
