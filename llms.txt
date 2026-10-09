@@ -19634,22 +19634,6 @@ const getRunSettingsSummary = (profile: AgentProfile) =>
 ⋮----
 // Only show max tokens if it's overridden
 ⋮----
-const getContextSummary = (profile: AgentProfile) =>
-⋮----
-const getGenericToolsSummary = (profile: AgentProfile) =>
-⋮----
-const getMcpServersSummary = (profile: AgentProfile, mcpServers: Record<string, McpServerConfig>) =>
-⋮----
-type Props = {
-  settings: SettingsData;
-  setSettings: (settings: SettingsData) => void;
-  agentProfiles: AgentProfile[];
-  setAgentProfiles: (profiles: AgentProfile[]) => void;
-  initialProfileId?: string;
-  openProjects?: ProjectData[];
-  selectedProfileContext?: 'global' | string;
-};
-⋮----
 // Profile context state for project-level profiles
 ⋮----
 // Sync internal profileContext with selectedProfileContext prop
