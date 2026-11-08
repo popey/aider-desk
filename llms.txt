@@ -1475,6 +1475,9 @@ import { Task } from '@/task';
 export class ApprovalManager
 ⋮----
 constructor(
+    private readonly task: Task,
+    private readonly profile: AgentProfile,
+  )
 ⋮----
 async handleToolApproval(
     toolName: string,
@@ -1482,7 +1485,7 @@ async handleToolApproval(
     key: string,
     text: string,
     subject?: string,
-): Promise<[boolean, string | undefined]>
+  ): Promise<[boolean, string | undefined]>
 ⋮----
 async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]>
 ⋮----
@@ -1724,7 +1727,7 @@ type Skill = {
   dirPath: string;
 };
 ⋮----
-const parseSkillFrontMatter = (markdown: string):
+const parseSkillFrontMatter = (markdown: string): { name: string; description: string } | null =>
 ⋮----
 const safeReadDir = async (dirPath: string): Promise<string[]> =>
 ⋮----
@@ -1912,12 +1915,12 @@ import { EventManager } from '@/events';
 import { deriveDirName } from '@/utils';
 ⋮----
 // Helper methods for directory management
-const getGlobalAgentsDir = (): string
-const getProjectAgentsDir = (projectDir: string): string
-const getAgentsDirForProfile = (profile: AgentProfile): string
+const getGlobalAgentsDir = (): string =>
+const getProjectAgentsDir = (projectDir: string): string =>
+const getAgentsDirForProfile = (profile: AgentProfile): string =>
 ⋮----
 // Helper methods for rule file discovery
-const getAgentRulesDir = (agentsDir: string, agentDirName: string): string
+const getAgentRulesDir = (agentsDir: string, agentDirName: string): string =>
 ⋮----
 const getRuleFilesForAgent = async (agentDirName: string, agentsDir: string): Promise<string[]> =>
 ⋮----
@@ -1947,7 +1950,7 @@ private directoryWatchers: Map<string, FSWatcher> = new Map(); // agentsDir → 
 constructor(
     private readonly eventManager: EventManager,
     private readonly extensionManager: ExtensionManager,
-)
+  )
 ⋮----
 public async init(): Promise<void>
 ⋮----
@@ -1991,7 +1994,7 @@ private async setupWatcherForDirectory(agentsDir: string): Promise<void>
 ⋮----
 // Also watch rules subdirectories within each agent directory
 ⋮----
-const reloadFunction = ()
+const reloadFunction = () =>
 ⋮----
 // Set up rules watcher event handlers
 ⋮----
@@ -2235,8 +2238,17 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 export class Agent
 ⋮----
 constructor(
+    private readonly store: Store,
+    private readonly agentProfileManager: AgentProfileManager,
+    private readonly mcpManager: McpManager,
+    private readonly modelManager: ModelManager,
+    private readonly telemetryManager: TelemetryManager,
+    private readonly memoryManager: MemoryManager,
+    private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
+  )
 ⋮----
-private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<
+private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: (TextPart | ImagePart)[] }>
 ⋮----
 // If binary, try to detect if it's an image using image-type and return base64
 ⋮----
@@ -2281,7 +2293,7 @@ private async getAvailableTools(
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
     promptContext?: PromptContext,
-): Promise<ToolSet>
+  ): Promise<ToolSet>
 ⋮----
 // Build the toolSet directly from enabled clients and tools
 ⋮----
@@ -2316,9 +2328,9 @@ private convertMpcToolToAiSdkTool(
     toolDef: McpTool,
     approvalManager: ApprovalManager,
     promptContext?: PromptContext,
-): Tool
+  ): Tool
 ⋮----
-const execute = async (args:
+const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolCallOptions) =>
 ⋮----
 // --- Tool Approval Logic ---
 ⋮----
@@ -2375,7 +2387,7 @@ async runAgent(
     systemPrompt?: string,
     includeInContext = true,
     abortSignal?: AbortSignal,
-): Promise<ContextMessage[]>
+  ): Promise<ContextMessage[]>
 ⋮----
 // Store resolved provider for use in retry logic
 ⋮----
@@ -2388,7 +2400,7 @@ async runAgent(
 // Lazily initialize MCP clients for the current task
 ⋮----
 // repairToolCall function that attempts to repair tool calls
-const repairToolCall = async (
+const repairToolCall = async ({ toolCall, tools, error, messages, system }) =>
 ⋮----
 // If the tool doesn't exist, return a call to the helper tool
 // to inform the LLM about the missing tool.
@@ -2486,7 +2498,7 @@ async generateText(
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
-): Promise<string | undefined>
+  ): Promise<string | undefined>
 ⋮----
 async estimateTokens(task: Task, profile: AgentProfile): Promise<number>
 ⋮----
@@ -2513,7 +2525,7 @@ private async processStep<TOOLS extends ToolSet>(
     model: string,
     promptContext?: PromptContext,
     abortSignal?: AbortSignal,
-): Promise<ContextMessage[]>
+  ): Promise<ContextMessage[]>
 ⋮----
 reasoningText: reasoningText?.substring(0, 100), // Log truncated reasoning
 text: text?.substring(0, 100), // Log truncated text
@@ -2540,7 +2552,7 @@ private async compactMessagesIfNeeded(
     resultMessages: ContextMessage[],
     promptContext?: PromptContext,
     abortSignal?: AbortSignal,
-)
+  )
 ⋮----
 // Check for context compacting
 ⋮----
@@ -2598,7 +2610,7 @@ async initMcpConnectors(
     taskDir: string | null,
     forceReload = false,
     enabledServers?: string[],
-): Promise<McpConnector[]>
+  ): Promise<McpConnector[]>
 ⋮----
 // close old connector
 ⋮----
@@ -2616,7 +2628,7 @@ private async initMcpConnector(
     forceReload = false,
     initId?: string,
     scope: string = 'global',
-): Promise<McpConnector>
+  ): Promise<McpConnector>
 ⋮----
 oldConnector = null; // Clear the old client reference
 ⋮----
@@ -2860,7 +2872,7 @@ constructor(
     httpServer: HttpServer,
     private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
-)
+  )
 ⋮----
 public init(httpServer: HttpServer): void
 ⋮----
@@ -2909,6 +2921,13 @@ import {
 export class Connector
 ⋮----
 constructor(
+    readonly socket: Socket,
+    readonly baseDir: string,
+    readonly taskId: string | undefined,
+    readonly source: string | undefined,
+    readonly listenTo: MessageAction[] = [],
+    readonly inputHistoryFile?: string,
+  )
 ⋮----
 public sendPromptMessage(
     prompt: string,
@@ -2918,11 +2937,11 @@ public sendPromptMessage(
     messages: { role: MessageRole; content: string }[] = [],
     files: ContextFile[] = [],
     options?: AiderRunOptions,
-): void
+  ): void
 ⋮----
 public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat, environmentVariables?: Record<string, string>): void
 ⋮----
-public sendRunCommandMessage(command: string, messages:
+public sendRunCommandMessage(command: string, messages: { role: MessageRole; content: string }[] = [], files: ContextFile[] = []): void
 ⋮----
 public sendAddMessageMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true)
 ⋮----
@@ -2934,7 +2953,7 @@ public sendCompactConversationMessage(customInstructions?: string)
 ⋮----
 public sendUpdateEnvVarsMessage(environmentVariables: Record<string, unknown>)
 ⋮----
-public sendRequestTokensInfoMessage(messages:
+public sendRequestTokensInfoMessage(messages: { role: MessageRole; content: string }[], files: ContextFile[])
 ⋮----
 public sendUpdateModelsInfoMessage(modelsInfo: Record<string, ModelInfo>)
 
@@ -2975,7 +2994,7 @@ constructor(
     public readonly command: string,
     public readonly stderr: string,
     public readonly exitCode?: number,
-)
+  )
 ⋮----
 interface ExecError extends Error {
   stdout?: string;
@@ -2984,6 +3003,12 @@ interface ExecError extends Error {
 }
 ⋮----
 export class CustomCommandManager
+⋮----
+constructor(
+    private readonly project: Project,
+    private readonly eventManager: EventManager,
+    private readonly extensionManager: ExtensionManager,
+  )
 ⋮----
 public async start(): Promise<void>
 ⋮----
@@ -3045,7 +3070,7 @@ private async processShellCommandLine(line: string): Promise<string | string[]>
 ⋮----
 maxBuffer: 10 * 1024 * 1024, // 10 MB
 ⋮----
-private extractErrorDetails(error: unknown):
+private extractErrorDetails(error: unknown): { stderr: string; exitCode?: number }
 ⋮----
 private isExecError(error: unknown): error is ExecError
 ⋮----
@@ -3291,7 +3316,7 @@ private broadcastToEventConnectors(eventType: string, data: unknown, log = true)
 // Remove disconnected sockets
 ⋮----
 // Extension UI events
-sendExtensionUIRefresh(options:
+sendExtensionUIRefresh(options: { projectDir?: string; extensionId?: string; componentId?: string; taskId?: string; reloadComponents?: boolean }): void
 ⋮----
 // Modal overlay URL events
 sendModalOverlayUrl(url: string): void
@@ -3339,6 +3364,14 @@ import { openUrl as openUrlUtil } from '@/utils/open-url';
 export class ExtensionContextImpl implements ExtensionContext
 ⋮----
 constructor(
+    private readonly extensionId: string,
+    private readonly extensionName: string,
+    private readonly store?: Store,
+    private readonly modelManager?: ModelManager,
+    private readonly eventManager?: EventManager,
+    private readonly project?: Project,
+    private readonly task?: Task,
+  )
 ⋮----
 log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void
 ⋮----
@@ -3468,7 +3501,7 @@ private deriveExtensionName(filePath: string): string
 ⋮----
 // Otherwise, use the filename without extension
 ⋮----
-async loadExtension(filePath: string): Promise<
+async loadExtension(filePath: string): Promise<{ extension: Extension; metadata: ExtensionMetadata } | null>
 ⋮----
 // Use extension-specific jiti instance for proper module resolution
 ⋮----
@@ -3637,7 +3670,7 @@ constructor(
     private readonly eventManager: EventManager,
     private readonly telemetryManager: TelemetryManager,
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
-)
+  )
 ⋮----
 /**
    * Filter extensions based on disabled list from settings
@@ -3680,7 +3713,7 @@ private async initializeExtension(loaded: LoadedExtension, project?: Project): P
    * Loads, registers, and initializes an extension from a file path.
    * Combines the common pattern of load → register → initialize.
    */
-private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<
+private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<{ success: boolean; hasUIComponents: boolean }>
 ⋮----
 /**
    * Unified method to load all extensions from a directory.
@@ -3727,7 +3760,10 @@ async reloadProjectExtensions(project: Project): Promise<void>
 ⋮----
 async stopProjectWatcher(projectDir: string): Promise<void>
 ⋮----
-validateToolDefinition(tool: ToolDefinition):
+validateToolDefinition(tool: ToolDefinition): {
+    isValid: boolean;
+    errors: string[];
+  }
 ⋮----
 getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[]
 ⋮----
@@ -3748,7 +3784,10 @@ createExtensionToolset(task: Task, mode: string, profile: AgentProfile, allTools
 ⋮----
 // Error isolation - log and return error message
 ⋮----
-validateCommandDefinition(command: CommandDefinition):
+validateCommandDefinition(command: CommandDefinition): {
+    isValid: boolean;
+    errors: string[];
+  }
 ⋮----
 getCommands(project: Project): RegisteredCommand[]
 ⋮----
@@ -3758,7 +3797,10 @@ getAgentById(agentId: string, project?: Project): RegisteredAgent | undefined
 ⋮----
 getModes(project: Project): RegisteredMode[]
 ⋮----
-validateModeDefinition(mode: ModeDefinition):
+validateModeDefinition(mode: ModeDefinition): {
+    isValid: boolean;
+    errors: string[];
+  }
 ⋮----
 getProviders(project?: Project): RegisteredProvider[]
 ⋮----
@@ -3794,7 +3836,10 @@ async getExtensionConfig(extensionId: string, project?: Project): Promise<unknow
    */
 async saveExtensionConfig(extensionId: string, configData: unknown, project?: Project): Promise<unknown>
 ⋮----
-validateUIComponentDefinition(component: UIComponentDefinition):
+validateUIComponentDefinition(component: UIComponentDefinition): {
+    isValid: boolean;
+    errors: string[];
+  }
 ⋮----
 async updateAgentProfile(profile: AgentProfile): Promise<AgentProfile | null>
 ⋮----
@@ -3857,7 +3902,7 @@ async dispatchEvent<K extends keyof ExtensionEventMap>(
     event: ExtensionEventMap[K],
     project: Project,
     task?: Task,
-): Promise<ExtensionEventMap[K]>
+  ): Promise<ExtensionEventMap[K]>
 ⋮----
 // Get all extensions (global + project-specific)
 ⋮----
@@ -4042,7 +4087,7 @@ addToolMessage(
     promptContext?: PromptContext,
     saveToDb = true,
     finished = !!response,
-)
+  )
 ⋮----
 async addResponseMessage(message: ResponseMessage, saveToDb = true)
 ⋮----
@@ -4088,7 +4133,7 @@ async runPromptInAgent(
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
-): Promise<ResponseCompletedData[]>
+  ): Promise<ResponseCompletedData[]>
 ⋮----
 async runCustomCommand(name: string, args: string[] = [], mode?: string): Promise<void>
 ⋮----
@@ -4525,7 +4570,7 @@ import { Task } from '@/task';
 ⋮----
 type AuggieSdkModule = typeof import('@augmentcode/auggie-sdk');
 ⋮----
-const loadAuggieSdk = async (): Promise<AuggieSdkModule>
+const loadAuggieSdk = async (): Promise<AuggieSdkModule> =>
 ⋮----
 export const loadAuggieModels = async (profile: ProviderProfile, _settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5173,7 +5218,7 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
 const getValue = (
         info: LiteLLMModelInfo,
         key: 'context_window' | 'max_input_tokens' | 'max_output_tokens' | 'max_tokens' | 'input_cost_per_token' | 'output_cost_per_token',
-) =>
+      ) =>
 ⋮----
 // Aggregate values across all backends for this model name
 // For limits (context window, max output), use MIN to be safe
@@ -5724,7 +5769,7 @@ import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
 const loadSyntheticModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
-const hasSyntheticEnvVars = (): boolean
+const hasSyntheticEnvVars = (): boolean =>
 ⋮----
 const getSyntheticAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
@@ -5830,7 +5875,7 @@ const loadZaiPlanModels = async (profile: ProviderProfile, settings: SettingsDat
 ⋮----
 temperature: 0.7, // Default temperature for ZAI models
 ⋮----
-const hasZaiPlanEnvVars = (): boolean
+const hasZaiPlanEnvVars = (): boolean =>
 ⋮----
 const getZaiPlanAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
@@ -5951,7 +5996,7 @@ export class ModelManager
 constructor(
     private store: Store,
     private eventManager: EventManager,
-)
+  )
 ⋮----
 private async init(): Promise<void>
 ⋮----
@@ -6025,7 +6070,7 @@ async upsertModel(providerId: string, modelId: string, model: Model): Promise<vo
 ⋮----
 async deleteModel(providerId: string, modelId: string): Promise<void>
 ⋮----
-async updateModels(modelUpdates: Array<
+async updateModels(modelUpdates: Array<{ providerId: string; modelId: string; model: Model }>): Promise<void>
 ⋮----
 // Reload models for all affected providers at once
 ⋮----
@@ -6043,7 +6088,7 @@ createLlm(
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-): LanguageModelV2 | Promise<LanguageModelV2>
+  ): LanguageModelV2 | Promise<LanguageModelV2>
 ⋮----
 // Resolve Model object if string is provided
 ⋮----
@@ -6382,7 +6427,7 @@ constructor(
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
     private readonly pythonInstaller: PythonDependenciesInstaller,
-)
+  )
 ⋮----
 private findProject(baseDir: string): Project | undefined
 ⋮----
@@ -6457,7 +6502,7 @@ constructor(
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
     private readonly pythonInstaller: PythonDependenciesInstaller,
-)
+  )
 ⋮----
 public async start()
 ⋮----
@@ -6648,7 +6693,7 @@ constructor(
     private readonly extensionManager: ExtensionManager,
     private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
-)
+  )
 ⋮----
 public async init(): Promise<void>
 ⋮----
@@ -6680,7 +6725,7 @@ private async render(name: PromptTemplateName, data: unknown, projectDir: string
 ⋮----
 // Dispatch onPromptTemplate event to allow extensions to override the prompt
 ⋮----
-const isAllowed = (tool: string)
+const isAllowed = (tool: string) =>
 ⋮----
 anyEnabled: false, // Will be set below
 ⋮----
@@ -6906,7 +6951,7 @@ export class ContextApi extends BaseApi
 constructor(
     private readonly projectManager: ProjectManager,
     private readonly eventsHandler: EventsHandler,
-)
+  )
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
@@ -7397,7 +7442,7 @@ const main = async (): Promise<void> =>
 ⋮----
 // Force headless mode for node-runner
 ⋮----
-const updateProgress = (
+const updateProgress = ({ step, message, info, progress }: { step: string; message: string; info?: string; progress?: number }) =>
 ⋮----
 // Initialize managers first (creates pythonInstaller)
 ⋮----
@@ -7447,7 +7492,7 @@ constructor(
     private readonly projectManager: ProjectManager,
     private readonly eventsHandler: EventsHandler,
     private readonly store: Store,
-)
+  )
 ⋮----
 private serverGuardMiddleware(_: Request, res: Response, next: NextFunction): void
 ⋮----
@@ -7503,7 +7548,7 @@ File: src/main/store/migrations/v1-to-v2.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DEFAULT_SETTINGS } from '../store';
 ⋮----
-export const migrateSettingsV1toV2 = (settings: any): any => (
+export const migrateSettingsV1toV2 = (settings: any): any =>
 ⋮----
 // @ts-expect-error the config has changed
 
@@ -7546,7 +7591,7 @@ File: src/main/store/migrations/v13-to-v14.ts
 import { ProviderProfile } from '@common/types';
 import { LlmProvider, LlmProviderName } from '@common/agent';
 ⋮----
-export const migrateProvidersV13toV14 = (settings:
+export const migrateProvidersV13toV14 = (settings: { llmProviders: Partial<Record<LlmProviderName, LlmProvider>> }): any =>
 
 ================
 File: src/main/store/migrations/v14-to-v15.ts
@@ -7903,6 +7948,13 @@ import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 export class AiderManager
 ⋮----
 constructor(
+    private readonly task: Task,
+    private readonly store: Store,
+    private readonly modelManager: ModelManager,
+    private readonly eventManager: EventManager,
+    private readonly getConnectors: () => Connector[],
+    private readonly pythonInstaller: PythonDependenciesInstaller,
+  )
 ⋮----
 public async start(forceRestart = false): Promise<void>
 ⋮----
@@ -7962,7 +8014,11 @@ private addCommandOutput(command: string, output: string): void
 ⋮----
 // Append output to the commandOutputs map
 ⋮----
-public closeCommandOutput(addToContext = true):
+public closeCommandOutput(addToContext = true): {
+    command: string;
+    output: string | undefined;
+    addToContext: boolean;
+  } | null
 ⋮----
 public sendUpdateEnvVars(environmentVariables: Record<string, unknown>): void
 
@@ -8005,7 +8061,7 @@ constructor(
     private readonly taskId: string,
     initialMessages: ContextMessage[] = [],
     initialFiles: ContextFile[] = [],
-)
+  )
 ⋮----
 // Task-specific storage path - single context per task
 ⋮----
@@ -8320,7 +8376,7 @@ constructor(
     private readonly extensionManager: ExtensionManager,
     private readonly pythonInstaller: PythonDependenciesInstaller,
     initialTaskData?: Partial<TaskData>,
-)
+  )
 ⋮----
 public async getTaskAgentProfile(): Promise<AgentProfile | null>
 ⋮----
@@ -8438,7 +8494,7 @@ public async runPrompt(
     addToInputHistory = true,
     userMessageId = uuidv4(),
     sendNotification = true,
-): Promise<ResponseCompletedData[]>
+  ): Promise<ResponseCompletedData[]>
 ⋮----
 // Queue the prompt for later execution
 ⋮----
@@ -8468,7 +8524,7 @@ public async runPromptInAgent(
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
-): Promise<ResponseCompletedData[]>
+  ): Promise<ResponseCompletedData[]>
 ⋮----
 // send messages to connectors
 ⋮----
@@ -8496,7 +8552,7 @@ public async runSubagent(
     systemPrompt?: string,
     abortController?: AbortController,
     promptContext?: PromptContext,
-): Promise<ContextMessage[]>
+  ): Promise<ContextMessage[]>
 ⋮----
 // Register abort controller if provided and promptContext has interruptId
 ⋮----
@@ -8509,7 +8565,7 @@ public sendPromptToAider(
     messages: ConnectorMessage[] = this.contextManager.toConnectorMessages(),
     files: ContextFile[] = this.contextManager.getContextFiles(),
     options?: AiderRunOptions,
-): Promise<ResponseCompletedData[]>
+  ): Promise<ResponseCompletedData[]>
 ⋮----
 // Wait for prompt to finish and return collected responses
 ⋮----
@@ -8739,7 +8795,7 @@ public addToolMessage(
     promptContext?: PromptContext,
     saveToDb = true,
     finished = !!response,
-)
+  )
 ⋮----
 // Update total costs when adding the tool message
 ⋮----
@@ -8802,7 +8858,7 @@ public async compactConversation(
     abortSignal?: AbortSignal,
     waitForAgentCompletion = true,
     loadingMessage = 'Compacting conversation...',
-)
+  )
 ⋮----
 // Get profile if not provided
 ⋮----
@@ -8829,7 +8885,7 @@ public async handoffConversation(
     contextMessages?: ContextMessage[],
     waitForAgentCompletion = true,
     loadingMessage = 'Preparing handoff...',
-): Promise<void>
+  ): Promise<void>
 ⋮----
 // Get context messages
 ⋮----
@@ -8889,9 +8945,12 @@ private sendUpdateEnvVars(environmentVariables: Record<string, unknown>)
 ⋮----
 private getTodoFilePath(): string
 ⋮----
-public async readTodoFile(): Promise<
+public async readTodoFile(): Promise<{
+    initialUserPrompt: string;
+    items: TodoItem[];
+  } | null>
 ⋮----
-public async writeTodoFile(data:
+public async writeTodoFile(data: { initialUserPrompt: string; items: TodoItem[] }): Promise<void>
 ⋮----
 public async getTodos(): Promise<TodoItem[]>
 ⋮----
@@ -9150,6 +9209,9 @@ export interface TerminalInstance {
 export class TerminalManager
 ⋮----
 constructor(
+    private readonly eventManager: EventManager,
+    private readonly telemetryManager?: TelemetryManager,
+  )
 ⋮----
 private getShellCommand(): string
 ⋮----
@@ -9446,7 +9508,7 @@ releaseAll(): void
  * @param timeout - Optional timeout in milliseconds
  * @returns Promise<T> - Result of the function execution
  */
-export const withLock = async <T>(resourceName: string, fn: ()
+export const withLock = async <T>(resourceName: string, fn: () => Promise<T> | T, timeout?: number): Promise<T> =>
 ⋮----
 /**
  * Convenience function to acquire a named lock
@@ -9454,14 +9516,14 @@ export const withLock = async <T>(resourceName: string, fn: ()
  * @param timeout - Optional timeout in milliseconds
  * @returns Promise<() => void> - Release function to unlock the resource
  */
-export const acquireLock = async (resourceName: string, timeout?: number): Promise<()
+export const acquireLock = async (resourceName: string, timeout?: number): Promise<() => void> =>
 ⋮----
 /**
  * Check if a resource is currently locked
  * @param resourceName - Name of the resource to check
  * @returns boolean - True if the resource is locked
  */
-export const isLocked = (resourceName: string): boolean
+export const isLocked = (resourceName: string): boolean =>
 
 ================
 File: src/main/utils/open-url.ts
@@ -9654,7 +9716,7 @@ return ['-NoExit']; // Keep PowerShell open
    * @param command The command to execute
    * @returns Array of arguments to pass to spawn/exec
    */
-static getShellCommandArgs(command: string):
+static getShellCommandArgs(command: string): { shell: string; args: string[] }
 ⋮----
 // Unix shells
 ⋮----
@@ -9668,7 +9730,7 @@ static isShellAvailable(shellPath: string): boolean
 /**
  * Get the path separator for the current platform
  */
-const getPathSeparator = (): string
+const getPathSeparator = (): string =>
 ⋮----
 /**
  * Get the user's shell PATH by executing their shell
@@ -9777,13 +9839,13 @@ export const findExecutableInPath = (executable: string, checkOnly = false): str
  * @param command The command string to execute
  * @returns Object with shell path and args array (e.g. ['-c', command])
  */
-export const getShellCommandArgs = (command: string):
+export const getShellCommandArgs = (command: string): { shell: string; args: string[] } =>
 ⋮----
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
   command: string,
   options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
-): Promise<
+): Promise<{ stdout: string; stderr: string }> =>
 
 ================
 File: src/main/utils/web-scrapper.ts
@@ -9806,7 +9868,7 @@ private async scrapeWithBrowserWindow(
     timeout: number = 60000,
     abortSignal?: AbortSignal,
     format: WebScrapeFormat = 'markdown',
-): Promise<string>
+  ): Promise<string>
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 ⋮----
@@ -9882,7 +9944,7 @@ constructor(
     private readonly eventManager: EventManager,
     private readonly store: Store,
     private readonly pythonInstaller?: PythonDependenciesInstaller,
-)
+  )
 ⋮----
 async getVersions(forceRefresh = false): Promise<VersionsInfo>
 ⋮----
@@ -10056,7 +10118,7 @@ async removeWorktree(projectDir: string, worktree: Worktree): Promise<void>
 ⋮----
 async listWorktrees(projectDir: string): Promise<Worktree[]>
 ⋮----
-async listBranches(projectPath: string): Promise<Array<
+async listBranches(projectPath: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>>
 ⋮----
 // Get all local branches
 ⋮----
@@ -10078,7 +10140,7 @@ async getProjectMainBranch(projectPath: string): Promise<string>
 async detectMainBranch(projectPath: string): Promise<string>
 ⋮----
 // Deprecated: Use getProjectMainBranch instead
-async getEffectiveMainBranch(project:
+async getEffectiveMainBranch(project: { path: string; main_branch?: string }): Promise<string>
 ⋮----
 async hasChangesToRebase(worktreePath: string, mainBranch: string): Promise<boolean>
 ⋮----
@@ -10090,7 +10152,12 @@ async hasChangesToRebase(worktreePath: string, mainBranch: string): Promise<bool
 async checkForRebaseConflicts(
     worktreePath: string,
     mainBranch: string,
-): Promise<
+  ): Promise<{
+    hasConflicts: boolean;
+    conflictingFiles?: string[];
+    conflictingCommits?: { ours: string[]; theirs: string[] };
+    canAutoMerge?: boolean;
+  }>
 ⋮----
 // First check if there are any changes to rebase
 ⋮----
@@ -10120,7 +10187,11 @@ async checkForRebaseConflicts(
 async rebaseMainIntoWorktree(
     worktreePath: string,
     mainBranch: string,
-): Promise<
+  ): Promise<{
+    success: boolean;
+    error?: GitError;
+    hasTempCommit?: boolean;
+  }>
 ⋮----
 // 1. Check for uncommitted changes and create temporary commit if needed
 ⋮----
@@ -10203,9 +10274,9 @@ generateSquashCommands(mainBranch: string, branchName: string): string[]
 ⋮----
 generateMergeCommands(mainBranch: string, branchName: string): string[]
 ⋮----
-async gitPull(worktreePath: string): Promise<
+async gitPull(worktreePath: string): Promise<{ output: string }>
 ⋮----
-async gitPush(worktreePath: string): Promise<
+async gitPush(worktreePath: string): Promise<{ output: string }>
 ⋮----
 async getLastCommits(worktreePath: string, count: number = 20, includeStats: boolean = true): Promise<RawCommitData[]>
 ⋮----
@@ -10278,7 +10349,7 @@ async mergeWorktreeToMainWithUncommitted(
     commitMessage?: string,
     targetBranch?: string,
     symlinkFolders: string[] = [],
-): Promise<MergeState>
+  ): Promise<MergeState>
 ⋮----
 // 1. Track initial state
 ⋮----
@@ -10307,7 +10378,13 @@ async checkWorktreeForUnmergedWork(
     projectPath: string,
     worktreePath: string,
     targetBranch?: string,
-): Promise<
+  ): Promise<{
+    hasUncommittedChanges: boolean;
+    hasUnmergedCommits: boolean;
+    unmergedCommitCount: number;
+    unmergedCommits: string[];
+    uncommittedFiles?: string[];
+  }>
 ⋮----
 // 1. Check for uncommitted changes
 ⋮----
@@ -10337,7 +10414,7 @@ async getUpdatedFiles(
     workingMode?: WorkingMode,
     mainBranch?: string,
     groupMode: UpdatedFilesGroupMode = UpdatedFilesGroupMode.Grouped,
-): Promise<UpdatedFile[]>
+  ): Promise<UpdatedFile[]>
 ⋮----
 /**
    * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
@@ -10450,7 +10527,7 @@ async applyUncommittedChangesToMain(
     worktreePath: string,
     targetBranch?: string,
     symlinkFolders: string[] = [],
-): Promise<void>
+  ): Promise<void>
 ⋮----
 // 1. Check if there are uncommitted changes in worktree
 ⋮----
@@ -10591,6 +10668,21 @@ import { isElectron } from '@/app';
 export class EventsHandler
 ⋮----
 constructor(
+    private readonly projectManager: ProjectManager,
+    private readonly store: Store,
+    private readonly mcpManager: McpManager,
+    private readonly versionsManager: VersionsManager,
+    private readonly modelManager: ModelManager,
+    private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
+    private readonly terminalManager: TerminalManager,
+    private readonly cloudflareTunnelManager: CloudflareTunnelManager,
+    private readonly eventManager: EventManager,
+    private readonly agentProfileManager: AgentProfileManager,
+    private readonly memoryManager: MemoryManager,
+    private readonly extensionManager: ExtensionManager,
+    private readonly windowManager?: WindowManager,
+  )
 ⋮----
 loadSettings(): SettingsData
 ⋮----
@@ -10653,7 +10745,7 @@ async runCodeInlineRequest(
     lineNumber: number,
     userComment: string,
     createNewTask?: boolean,
-): Promise<void>
+  ): Promise<void>
 ⋮----
 async loadInputHistory(baseDir: string): Promise<string[]>
 ⋮----
@@ -10719,7 +10811,13 @@ closeTerminal(terminalId: string): void
 ⋮----
 getTerminalForTask(taskId: string): string | null
 ⋮----
-getTerminalsForTask(taskId: string):
+getTerminalsForTask(taskId: string): {
+    id: string;
+    taskId: string;
+    baseDir: string;
+    cols: number;
+    rows: number;
+  }[]
 ⋮----
 async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
@@ -10735,7 +10833,7 @@ async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 ⋮----
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
 ⋮----
-async listBranches(projectDir: string): Promise<Array<
+async listBranches(projectDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>>
 ⋮----
 async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string)
 ⋮----
@@ -10803,7 +10901,7 @@ async upsertModel(providerId: string, modelId: string, model: Model): Promise<vo
 ⋮----
 async deleteModel(providerId: string, modelId: string): Promise<void>
 ⋮----
-async updateModels(modelUpdates: Array<
+async updateModels(modelUpdates: Array<{ providerId: string; modelId: string; model: Model }>): Promise<void>
 ⋮----
 async showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult>
 ⋮----
@@ -10892,7 +10990,7 @@ async executeUIExtensionAction(
     args: unknown[],
     projectDir?: string,
     taskId?: string,
-): Promise<unknown>
+  ): Promise<unknown>
 ⋮----
 getExtensionConfigComponent(extensionId: string, projectDir?: string): ExtensionConfigComponent | null
 ⋮----
@@ -10963,11 +11061,11 @@ const saveWindowState = (): void =>
 const createNewWindow = async (projectToActivate?: string) =>
 ⋮----
 // Export getter for IPC handlers
-export const getCreateNewWindow = ()
+export const getCreateNewWindow = () =>
 ⋮----
 // Setup custom menu only in GUI mode - pass createNewWindow function
 ⋮----
-updateProgress = (
+updateProgress = ({ message }: UpdateProgressData) =>
 ⋮----
 // Forward logger.info messages to splash screen
 ⋮----
@@ -11441,7 +11539,7 @@ import { isDev } from '@/app';
 ⋮----
 export class ProgressWindow
 ⋮----
-constructor(options:
+constructor(options: { width?: number; height?: number; icon?: string; splashImage?: string })
 ⋮----
 // Send icon path and splash image to renderer once loaded
 ⋮----
@@ -12035,7 +12133,7 @@ patchProjectSettings(baseDir: string, settings: Partial<ProjectSettings>): Promi
 getFilePathSuggestions(currentPath: string, directoriesOnly?: boolean): Promise<string[]>
 getAddableFiles(baseDir: string, taskId: string): Promise<string[]>
 getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]>
-getUpdatedFiles(baseDir: string, taskId: string): Promise<
+getUpdatedFiles(baseDir: string, taskId: string): Promise<{ path: string; additions: number; deletions: number }[]>
 async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
 addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void
@@ -12096,7 +12194,7 @@ getProviders(): Promise<ProviderProfile[]>
 updateProviders(providers: ProviderProfile[]): Promise<ProviderProfile[]>
 upsertModel(providerId: string, modelId: string, model: Model): Promise<ProviderModelsData>
 deleteModel(providerId: string, modelId: string): Promise<ProviderModelsData>
-updateModels(modelUpdates: Array<
+updateModels(modelUpdates: Array<{ providerId: string; modelId: string; model: Model }>): Promise<ProviderModelsData>
 queryUsageData(from: string, to: string): Promise<UsageDataRow[]>
 getEffectiveEnvironmentVariable(key: string, baseDir?: string): Promise<EnvironmentVariable | undefined>
 ⋮----
@@ -12133,7 +12231,7 @@ addProvidersUpdatedListener(callback: (data: ProvidersUpdatedData) => void): () 
 ⋮----
 addAgentProfilesUpdatedListener(callback: (data: AgentProfilesUpdatedData) => void): () => void
 ⋮----
-addProjectSettingsUpdatedListener(baseDir: string, callback: (data:
+addProjectSettingsUpdatedListener(baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void): () => void
 ⋮----
 addWorktreeIntegrationStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void): () => void
 ⋮----
@@ -12164,7 +12262,7 @@ async writeToTerminal(terminalId: string, data: string): Promise<boolean>
 async resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean>
 async closeTerminal(terminalId: string): Promise<boolean>
 async getTerminalForTask(taskId: string): Promise<string | null>
-async getAllTerminalsForTask(taskId: string): Promise<Array<
+async getAllTerminalsForTask(taskId: string): Promise<Array<{ id: string; taskId: string; cols: number; rows: number; baseDir: string }>>
 isManageServerSupported(): boolean
 ⋮----
 startServer(username?: string, password?: string): Promise<boolean>
@@ -12192,7 +12290,7 @@ restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
 async readFile(baseDir: string, filePath: string): Promise<string>
 ⋮----
-listBranches(baseDir: string): Promise<Array<
+listBranches(baseDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>>
 ⋮----
 getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus>
 ⋮----
@@ -12278,7 +12376,7 @@ addAiderConnectorStatusListener(
     callback: (data: { baseDir?: string; taskId?: string; status: AiderConnectorStatus }) => void,
     baseDir?: string,
     taskId?: string,
-): () => void
+  ): () => void
 ⋮----
 async getAiderConnectorStatus(): Promise<AiderConnectorStatus>
 
@@ -12369,7 +12467,7 @@ type Props = {
   onToggle: (serverName: string) => void;
 };
 ⋮----
-export const McpServerSelectorItem = (
+export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onToggle }: Props) =>
 ⋮----
 const loadTools = async () =>
 ⋮----
@@ -12517,7 +12615,7 @@ type Props = {
   viewMode?: DiffViewMode;
 };
 ⋮----
-export const DiffViewer = (
+export const DiffViewer = ({ oldValue, newValue, language, isComplete = false, viewMode = DiffViewMode.SideBySide }: Props) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -12621,7 +12719,7 @@ const calculateChangeRatio = (a: string, b: string): number =>
 ⋮----
 const isSimilarEnough = (a: string, b: string, maxChangeRatio: number): boolean =>
 ⋮----
-const changeToLine = (change: _Change): Line => (
+const changeToLine = (change: _Change): Line =>
 ⋮----
 const diffCharsIfWithinEditLimit = (
   a: string,
@@ -12634,8 +12732,7 @@ const diffCharsIfWithinEditLimit = (
   | {
       exceededLimit: false;
       diffs: LineSegment[];
-    } => {
-  const diffs = diffChars(a, b);
+    } =>
 ⋮----
 const buildInlineDiffSegments = (current: _Change, next: _Change, options: ParseOptions): Line['content'] =>
 ⋮----
@@ -12667,7 +12764,7 @@ export const mergeModifiedLines = (changes: _Change[], options: ParseOptions): L
 ⋮----
 const parseHunk = (hunk: _Hunk, options: ParseOptions): Hunk =>
 ⋮----
-const extractHunkContext = (header: string): string
+const extractHunkContext = (header: string): string =>
 ⋮----
 const insertSkipBlocks = (hunks: Hunk[]): (Hunk | SkipBlock)[] =>
 ⋮----
@@ -12698,7 +12795,20 @@ type Props = {
 ⋮----
 const handleOpenChange = () =>
 ⋮----
-className=
+className={twMerge('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary-strong transition-colors', buttonClassName)}
+      >
+⋮----
+className={clsx(
+          'overflow-hidden transition-all duration-200',
+          isOpen
+            ? clsx(
+                noMaxHeight ? '' : 'max-h-screen',
+                'opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth',
+              )
+            : 'max-h-0 opacity-0',
+        )}
+      >
+        <Activity mode=
 
 ================
 File: src/renderer/src/components/common/BaseDialog.tsx
@@ -12824,7 +12934,7 @@ const isCustomDiffContent = (content: string): boolean =>
 ⋮----
 const isUdiffContent = (content: string): boolean =>
 ⋮----
-const parseDiffContent = (content: string):
+const parseDiffContent = (content: string): { oldValue: string; newValue: string } =>
 ⋮----
 // We have old value complete and new value being streamed
 ⋮----
@@ -12865,7 +12975,7 @@ type Props = {
   children?: ReactNode;
 };
 ⋮----
-export const CodeInline = (
+export const CodeInline = ({ className, children }: Props) =>
 ⋮----
 className=
 
@@ -12951,6 +13061,8 @@ File: src/renderer/src/components/common/DatePicker.css
 ⋮----
 .react-datepicker__day-name,
 ⋮----
+@apply text-text-primary;
+⋮----
 .react-datepicker__day:hover {
 ⋮----
 @apply bg-bg-tertiary;
@@ -12960,6 +13072,8 @@ File: src/renderer/src/components/common/DatePicker.css
 @apply bg-info-light;
 ⋮----
 .react-datepicker__day--keyboard-selected {
+⋮----
+@apply bg-bg-tertiary;
 
 ================
 File: src/renderer/src/components/common/DatePicker.tsx
@@ -12978,7 +13092,7 @@ type Props = DatePickerProps & {
   label?: ReactNode;
 };
 ⋮----
-className=
+className={clsx('min-h-[40px]', className)}
 
 ================
 File: src/renderer/src/components/common/FileChip.tsx
@@ -12992,7 +13106,7 @@ type Props = {
   onRemove: (path: string) => void;
 };
 ⋮----
-export const FileChip = (
+export const FileChip = ({ path, onRemove }: Props) =>
 ⋮----
 return <Chip key=
 
@@ -13027,7 +13141,7 @@ type Props = {
   'data-testid'?: string;
 };
 ⋮----
-export const IconButton = (
+export const IconButton = ({ icon, onClick, tooltip, tooltipMaxWidth, className, disabled, 'data-testid': testId }: Props) =>
 ⋮----
 const handleClick = (e: MouseEvent<HTMLDivElement>) =>
 
@@ -13048,7 +13162,7 @@ type Props = {
   tooltipMaxWidth?: number | string;
 };
 ⋮----
-export const InfoIcon = (
+export const InfoIcon = ({ tooltip, className = '', size = 'md', tooltipMaxWidth }: Props) =>
 ⋮----
 className=
 
@@ -13129,7 +13243,7 @@ type Props = {
   transparent?: boolean;
 };
 ⋮----
-export const LoadingOverlay = (
+export const LoadingOverlay = ({ message, spinnerSize = 'md', animateOpacity = false, transparent = false }: Props) =>
 ⋮----
 className=
 ⋮----
@@ -13150,7 +13264,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const LoadingText = (
+export const LoadingText = ({ label, typingSpeed = 80, pauseDuration = 2000, icon, className = '' }: Props) =>
 
 ================
 File: src/renderer/src/components/common/MarkdownInfoDialog.tsx
@@ -13178,7 +13292,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const MermaidDiagram = (
+export const MermaidDiagram = ({ code, className = '' }: Props) =>
 ⋮----
 const renderDiagram = async () =>
 
@@ -13203,7 +13317,7 @@ type Props = {
   openInWindowTitle?: string;
 };
 ⋮----
-export const ModalOverlayLayout = (
+export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false, openInWindowUrl, openInWindowTitle }: Props) =>
 ⋮----
 const handleOpenUrl = async () =>
 
@@ -13297,7 +13411,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const RadioButton = (
+export const RadioButton = ({ id, name, value, checked, onChange, label, className = '' }: Props) =>
 ⋮----
 const handleChange = () =>
 ⋮----
@@ -13316,7 +13430,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const Section = (
+export const Section = ({ id, title, children, className }: Props) =>
 
 ================
 File: src/renderer/src/components/common/Select.tsx
@@ -13444,7 +13558,7 @@ type Props<T> = {
 ⋮----
 const handleSort = (column: Column<T>) =>
 ⋮----
-onClick=
+onClick={() => handleSort(column)}
 
 ================
 File: src/renderer/src/components/common/TaskStateChip.tsx
@@ -13464,7 +13578,7 @@ const getStateTextClass = (state: string): string =>
 ⋮----
 export const getTaskStateLabel = (t: TFunction, state: string) =>
 ⋮----
-export const TaskStateChip = (
+export const TaskStateChip = ({ state, className = '' }: Props) =>
 ⋮----
 <span className=
 
@@ -13478,7 +13592,7 @@ export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   wrapperClassName?: string;
 };
 ⋮----
-export const TextArea = (
+export const TextArea = ({ label, wrapperClassName, className = '', ...props }: Props) =>
 
 ================
 File: src/renderer/src/components/common/Toggle.tsx
@@ -13492,7 +13606,7 @@ type Props = {
   'aria-label'?: string;
 };
 ⋮----
-export const Toggle = (
+export const Toggle = ({ checked, onChange, disabled = false, 'aria-label': ariaLabel }: Props) =>
 ⋮----
 const handleChange = () =>
 ⋮----
@@ -13514,7 +13628,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
   className?: string;
 };
 ⋮----
-onClick=
+onClick={(e) =>
 
 ================
 File: src/renderer/src/components/common/VerticalDotsMenu.tsx
@@ -13547,7 +13661,7 @@ className={clsx(
             'transition-opacity p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary',
             !isMenuOpen && 'opacity-0 group-hover:opacity-100',
           )}
-onClick=
+          onClick=
 
 ================
 File: src/renderer/src/components/common/VirtualTable.tsx
@@ -13605,7 +13719,7 @@ type Props = {
   size?: 'sm' | 'md' | 'lg';
 };
 ⋮----
-export const WarningIcon = (
+export const WarningIcon = ({ tooltip, className, size = 'md' }: Props) =>
 ⋮----
 className=
 
@@ -13806,11 +13920,7 @@ const loadLanguage = async () =>
 ⋮----
 const fetchFileContent = async () =>
 ⋮----
-const renderLoading = () => (
-    <div className="flex items-center justify-center h-full">
-      <AiOutlineLoading3Quarters className="w-8 h-8 text-text-muted animate-spin" />
-    </div>
-  );
+const renderLoading = () =>
 ⋮----
 <div className=
 
@@ -13872,7 +13982,7 @@ type Props = {
 ⋮----
 <FaGitSquare className=
 ⋮----
-onFileDiffClick=
+onFileDiffClick={() =>
 
 ================
 File: src/renderer/src/components/ContextFiles/RulesSection.tsx
@@ -13901,7 +14011,7 @@ type Props = {
 ⋮----
 // eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
-onFileDiffClick=
+onFileDiffClick={() =>
 
 ================
 File: src/renderer/src/components/ContextFiles/SectionContent.tsx
@@ -14113,6 +14223,12 @@ className=
 {/* Error Display */}
 ⋮----
 isGeneratingMessage
+                    ? t('contextFiles.generatingMessage')
+                    : amend
+                      ? t('contextFiles.commitMessagePlaceholderAmend')
+                      : t('contextFiles.commitMessagePlaceholder')
+                }
+                rows=
 
 ================
 File: src/renderer/src/components/ContextFiles/UpdatedFilesSection.tsx
@@ -14194,16 +14310,16 @@ className=
 ⋮----
 {/* Outer section header */}
 ⋮----
+className={clsx(
+            'flex items-center px-2 select-none h-[40px] shrink-0 bg-bg-primary-light',
+            !isOpen && 'cursor-pointer',
+            isOpen && !updatedActions && 'border-b border-border-dark-light',
+          )}
+          onClick=
+⋮----
 {/* Content area */}
 ⋮----
 {renderCommitGroupHeader(group, isGroupExpanded)}
-
-                          {isGroupExpanded && tree && (
-                            <SectionContent
-                              section={'updated' as SectionType}
-                              treeData={tree}
-                              expandedItems={expanded}
-setExpandedItems=
 ⋮----
 onClose=
 ⋮----
@@ -14360,7 +14476,7 @@ true, // forceRefresh
 ⋮----
 const executeExtensionAction = async (action: string, ...args: unknown[]) =>
 ⋮----
-<StringToReactComponent data=
+<StringToReactComponent data={getComponentData(comp)}>
 
 ================
 File: src/renderer/src/components/logs/LogsPage.tsx
@@ -14447,7 +14563,7 @@ setLogs((prev) => deduplicateLogs([...response.logs, ...prev])); // Prepend olde
 ⋮----
 <div className=
 ⋮----
-<span className=
+<span className={clsx('font-semibold uppercase whitespace-nowrap', LOG_LEVEL_COLORS[log.level])}>
 ⋮----
 <ModalOverlayLayout title=
 ⋮----
@@ -14565,11 +14681,11 @@ type Props = {
   hideMessageBar?: boolean;
 };
 ⋮----
-const isStandardBashOutput = (obj: unknown): obj is
+const isStandardBashOutput = (obj: unknown): obj is { stdout?: string; stderr?: string; exitCode?: number } =>
 ⋮----
-const hasErrorProperty = (obj: unknown): obj is
+const hasErrorProperty = (obj: unknown): obj is { error: string } =>
 ⋮----
-const hasDeniedProperty = (obj: unknown): obj is
+const hasDeniedProperty = (obj: unknown): obj is { denied: string } =>
 ⋮----
 const handleScrollToBottom = () =>
 ⋮----
@@ -14629,7 +14745,7 @@ type Props = {
 ⋮----
 const formatName = (name: string): string =>
 ⋮----
-const defaultLabel = () => t('toolMessage.toolLabel',
+const defaultLabel = () =>
 ⋮----
 <span>
 ⋮----
@@ -15172,12 +15288,7 @@ type Props = {
   onInterrupt?: () => void;
 };
 ⋮----
-const renderMessage = () => (
-    <div className="flex items-start gap-3">
-      <Icon className="inline-block h-3 w-3 flex-shrink-0 mt-[3px]" />
-      <div>{t(message.content)}</div>
-    </div>
-  );
+const renderMessage = () =>
 ⋮----
 <CopyMessageButton content=
 
@@ -15404,7 +15515,8 @@ type Props = {
   onRemoveUpToMessage?: (message: Message) => void;
 };
 ⋮----
-onFork=
+onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+          onRemoveUpTo=
 
 ================
 File: src/renderer/src/components/message/Messages.tsx
@@ -15495,7 +15607,7 @@ type Props = {
   onRemoveUpTo?: () => void;
 };
 ⋮----
-export const ResponseMessageBlock = (
+export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, compact = false, onRemove, onFork, onRemoveUpTo }: Props) =>
 ⋮----
 className=
 
@@ -15804,7 +15916,7 @@ type Props = {
 ⋮----
 const formatName = (name: string): string =>
 ⋮----
-const defaultLabel = () => t('toolMessage.toolLabel',
+const defaultLabel = () =>
 ⋮----
 // Handles message.args.paths (array) or fallback to message.args.path (string)
 ⋮----
@@ -15887,7 +15999,7 @@ type Props = {
   onRemoveUpTo?: () => void;
 };
 ⋮----
-export const UserMessageBlock = (
+export const UserMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, compact = false, onRemove, onRedo, onEdit, onFork, onRemoveUpTo }: Props) =>
 ⋮----
 const handleEdit = () =>
 ⋮----
@@ -15979,6 +16091,7 @@ if (lines[j].trim() === '</custom-command-bash>')
 // Handle any remaining content
 ⋮----
 processCodeBlock();
+  } else
 ⋮----
 export const parseThinkingAnswerFormat = (
   content: string,
@@ -16133,7 +16246,8 @@ const exportToImage = async () =>
 ⋮----
 // Show notification that export is not available with virtualized rendering
 ⋮----
-onFork=
+onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+                      onRemoveUpTo=
 ⋮----
 aria-label=
 
@@ -16150,7 +16264,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const AlibabaPlanModelOverrides = (
+export const AlibabaPlanModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 const handleProviderChange = (updatedProvider: AlibabaPlanProvider) =>
 
@@ -16211,7 +16325,7 @@ type Props = {
   onChange: (updated: AnthropicCompatibleProvider) => void;
 };
 ⋮----
-export const AnthropicCompatibleParameters = (
+export const AnthropicCompatibleParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16234,7 +16348,7 @@ type Props = {
   onChange: (updated: AnthropicProvider) => void;
 };
 ⋮----
-export const AnthropicParameters = (
+export const AnthropicParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16275,7 +16389,7 @@ type Props = {
   onChange: (updated: AzureProvider) => void;
 };
 ⋮----
-export const AzureAdvancedSettings = (
+export const AzureAdvancedSettings = ({ provider, onChange }: Props) =>
 ⋮----
 const handleReasoningEffortChange = (value: string) =>
 ⋮----
@@ -16296,7 +16410,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const AzureModelOverrides = (
+export const AzureModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to AzureProvider format for AdvancedSettings
 ⋮----
@@ -16362,10 +16476,36 @@ const handleSessionTokenChange = (e: ChangeEvent<HTMLInputElement>) =>
 label=
 ⋮----
 awsAccessKeyIdEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: awsAccessKeyIdEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'AWS_ACCESS_KEY_ID' })
+        }
+      />
+      <Input
+        label={
+          <div className="flex items-center">
+            <span>{t('bedrock.secretAccessKey')}</span>
+            <InfoIcon className="ml-1" tooltip={t('bedrock.secretAccessKeyTooltip')} />
+          </div>
+        }
+        type="password"
+        value=
 ⋮----
 <span>
 ⋮----
 awsSecretAccessKeyEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: awsSecretAccessKeyEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'AWS_SECRET_ACCESS_KEY' })
+        }
+      />
+      <Input
+        label={
+          <div className="flex items-center">
+            <span>{t('bedrock.sessionToken')}</span>
+            <InfoIcon className="ml-1" tooltip={t('bedrock.sessionTokenTooltip')} />
+          </div>
+        }
+        type="password"
+        value=
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/CerebrasParameters.tsx
@@ -16382,7 +16522,7 @@ type Props = {
   onChange: (updated: CerebrasProvider) => void;
 };
 ⋮----
-export const CerebrasParameters = (
+export const CerebrasParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16414,7 +16554,7 @@ type Props = {
   onChange: (updated: DeepseekProvider) => void;
 };
 ⋮----
-export const DeepseekParameters = (
+export const DeepseekParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16433,7 +16573,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const DefaultModelOverrides = (
+export const DefaultModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to LlmProvider format
 ⋮----
@@ -16512,7 +16652,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const GeminiModelOverrides = (
+export const GeminiModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to GeminiProvider format for AdvancedSettings
 ⋮----
@@ -16565,7 +16705,7 @@ type Props = {
   onChange: (updated: GpustackProvider) => void;
 };
 ⋮----
-export const GpustackParameters = (
+export const GpustackParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16588,7 +16728,7 @@ type Props = {
   onChange: (updated: GroqProvider) => void;
 };
 ⋮----
-export const GroqParameters = (
+export const GroqParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16618,7 +16758,7 @@ type Props = {
   onChange: (updated: KimiPlanProvider) => void;
 };
 ⋮----
-export const KimiPlanParameters = (
+export const KimiPlanParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16639,7 +16779,7 @@ type Props = {
   onChange: (updated: LitellmProvider) => void;
 };
 ⋮----
-export const LitellmParameters = (
+export const LitellmParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16662,7 +16802,7 @@ type Props = {
   onChange: (updated: LmStudioProvider) => void;
 };
 ⋮----
-export const LmStudioParameters = (
+export const LmStudioParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16700,7 +16840,7 @@ type Props = {
   onChange: (updated: OllamaProvider) => void;
 };
 ⋮----
-export const OllamaParameters = (
+export const OllamaParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16722,7 +16862,7 @@ type Props = {
   onChange: (updated: OpenAiProvider) => void;
 };
 ⋮----
-export const OpenAiAdvancedSettings = (
+export const OpenAiAdvancedSettings = ({ provider, onChange }: Props) =>
 ⋮----
 const handleReasoningEffortChange = (value: string) =>
 ⋮----
@@ -16764,7 +16904,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const OpenAiCompatibleModelOverrides = (
+export const OpenAiCompatibleModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to OpenAiCompatibleProvider format for AdvancedSettings
 ⋮----
@@ -16793,7 +16933,7 @@ type Props = {
   onChange: (updated: OpenAiCompatibleProvider) => void;
 };
 ⋮----
-export const OpenAiCompatibleParameters = (
+export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16816,7 +16956,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const OpenAiModelOverrides = (
+export const OpenAiModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to OpenAiProvider format for AdvancedSettings
 ⋮----
@@ -16870,7 +17010,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const OpenCodeModelOverrides = (
+export const OpenCodeModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to LlmProvider format
 ⋮----
@@ -16894,7 +17034,7 @@ type Props = {
   onChange: (updated: OpenCodeProvider) => void;
 };
 ⋮----
-export const OpenCodeParameters = (
+export const OpenCodeParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -16941,7 +17081,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const OpenRouterModelOverrides = (
+export const OpenRouterModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to OpenRouterProvider format for AdvancedSettings
 ⋮----
@@ -16971,25 +17111,19 @@ type Props = {
   onChange: (updated: OpenRouterProvider) => void;
 };
 ⋮----
-export const OpenRouterParameters = (
+export const OpenRouterParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
-const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
-    <Accordion
-      title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
-      chevronPosition="right"
-      className="mb-2 border rounded-md border-border-default-dark"
-      isOpen={open}
-      onOpenChange={setOpen}
-    >
-      <div className="p-4 pt-2">{children}</div>
-    </Accordion>
-  );
+const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) =>
 ⋮----
 label=
 ⋮----
 openRouterApiKeyEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: openRouterApiKeyEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })
+        }
+      />
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/ProviderModels.tsx
@@ -17061,7 +17195,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const RequestyModelOverrides = (
+export const RequestyModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to RequestyProvider format for AdvancedSettings
 ⋮----
@@ -17109,7 +17243,7 @@ type Props = {
   onChange: (updated: SyntheticProvider) => void;
 };
 ⋮----
-export const SyntheticParameters = (
+export const SyntheticParameters = ({ provider, onChange }: Props) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -17169,7 +17303,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const VertexAiModelOverrides = (
+export const VertexAiModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 // Convert overrides to VertexAiProvider format for AdvancedSettings
 ⋮----
@@ -17256,7 +17390,7 @@ type Props = {
   onChange: (overrides: Record<string, unknown>) => void;
 };
 ⋮----
-export const ZaiPlanModelOverrides = (
+export const ZaiPlanModelOverrides = ({ provider, overrides, onChange }: Props) =>
 ⋮----
 const handleProviderChange = (updatedProvider: ZaiPlanProvider) =>
 
@@ -17365,7 +17499,7 @@ disabled={!!model} // Don't allow changing provider for existing models
 ⋮----
 disabled={!!model} // Don't allow changing ID for existing models
 ⋮----
-onBlur=
+onBlur={(e) =>
 ⋮----
 <span>
 ⋮----
@@ -17396,7 +17530,7 @@ type Props = {
   onClose: () => void;
 };
 ⋮----
-export const ModelLibrary = (
+export const ModelLibrary = ({ onClose }: Props) =>
 ⋮----
 const handleCancelConfigure = () =>
 ⋮----
@@ -17432,7 +17566,7 @@ const handleBulkToggleHidden = async (modelIds: string[], isHidden: boolean) =>
 ⋮----
 // Show provider configuration form
 ⋮----
-onCancel=
+onCancel={() =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/ModelParameterOverrides.tsx
@@ -17541,7 +17675,7 @@ type Props = {
   onClick: () => void;
 };
 ⋮----
-export const ProviderCard = (
+export const ProviderCard = ({ name, icon, onClick }: Props) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/ProviderHeader.tsx
@@ -17564,10 +17698,11 @@ type Props = {
   onDeleteProfile: (profile: ProviderProfile) => void;
 };
 ⋮----
-onToggleSelect=
+onToggleSelect={() => onToggleSelect(profile.id)}
+              onEdit={() => onEditProfile(profile)}
 ⋮----
-onEdit=
-onDelete=
+onEdit={() =>
+onDelete={() =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/ProviderProfileCard.tsx
@@ -17664,7 +17799,7 @@ type Props = {
   onCancel: () => void;
 };
 ⋮----
-export const ProviderProfileDialog = (
+export const ProviderProfileDialog = ({ provider, profile, providers, onSave, onCancel }: Props) =>
 ⋮----
 const handleSave = (savedProfile: ProviderProfile) =>
 ⋮----
@@ -17864,6 +17999,13 @@ className=
 ⋮----
 {/* Step Title */}
 ⋮----
+className={clsx('mt-2 text-xs font-medium text-center max-w-20', {
+                  'text-info-lighter': isCurrent,
+                  'text-success-light': isCompleted,
+                  'text-text-muted': isFuture,
+                })}
+              >
+⋮----
 {/* Connector Line */}
 
 ================
@@ -17932,8 +18074,8 @@ label=
 ⋮----
 onDelete=
 ⋮----
-onTogglePin=
-onChangeState=
+onTogglePin={() =>
+onChangeState={(newState) =>
 
 ================
 File: src/renderer/src/components/project/TaskSidebar/TaskMenuButton.tsx
@@ -17998,7 +18140,7 @@ className={clsx(
               'transition-opacity p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary',
               !isMenuOpen && 'opacity-0 group-hover:opacity-100',
             )}
-onClick=
+            onClick=
 ⋮----
 e.stopPropagation();
 handleStateSubmenuToggle();
@@ -18013,7 +18155,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const TaskSectionHeader = (
+export const TaskSectionHeader = ({ title, className }: Props) =>
 ⋮----
 return <div className=
 
@@ -18109,8 +18251,8 @@ const handleBulkArchive = async () =>
 ⋮----
 <h3 className="text-sm font-semibold uppercase h-5">
 ⋮----
-onArchive=
-onUnarchive=
+onArchive={() =>
+onUnarchive={() =>
 ⋮----
 onClick=
 ⋮----
@@ -18174,7 +18316,7 @@ type Props = {
   isCollapsed?: boolean;
 };
 ⋮----
-export const TaskStatusIcon = (
+export const TaskStatusIcon = ({ taskId, state, isCollapsed }: Props) =>
 ⋮----
 return <span className=
 
@@ -18461,14 +18603,14 @@ const handleDragEnd = (event: DragEndEvent) =>
 ⋮----
 // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
 ⋮----
-onChange=
+onChange={(index) =>
 ⋮----
 className={clsx(
             'flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10',
             isActive ? 'hover:bg-bg-fourth' : 'hover:bg-bg-tertiary-strong',
             isProcessing ? 'cursor-default' : '',
           )}
-onClick=
+          onClick=
 ⋮----
 e.stopPropagation(); // Prevent tab selection/drag initiation
 
@@ -18515,7 +18657,7 @@ const handleStartupMode = async (tasks: TaskData[]) =>
 ⋮----
 const handleProjectStarted = () =>
 ⋮----
-const handleTaskCreated = (
+const handleTaskCreated = ({ task, activate }: TaskCreatedData) =>
 ⋮----
 const handleTaskInitialized = (taskData: TaskData) =>
 ⋮----
@@ -18637,7 +18779,9 @@ if (!settings)
 ⋮----
 /** Format the Python installation status for display in the TaskBar. */
 ⋮----
-return t('pythonSetup.failed',
+return t('pythonSetup.failed', { error: s.error });
+      }
+      if (s.state === 'checking-uv')
 ⋮----
 <div className=
 ⋮----
@@ -18812,9 +18956,10 @@ setEditingMessageIndex(null); // Clear editing state
 ⋮----
 <div className=
 ⋮----
-
+{renderSearchInput()}
 ⋮----
-height=
+height={terminalVisible ? (isMobile ? 150 : 200) : 0}
+              width=
 
 ================
 File: src/renderer/src/components/project/TodoListItem.tsx
@@ -19043,7 +19188,7 @@ title=
 ⋮----
 confirmButtonText=
 ⋮----
-onConfirm=
+onConfirm={(branch) =>
 
 ================
 File: src/renderer/src/components/project/WorktreeRevertButton.tsx
@@ -19090,28 +19235,9 @@ type Props = {
   onRefresh: () => void;
 };
 ⋮----
-const renderBadge = (tooltipContent: React.ReactNode, onClick: () => void, children: React.ReactNode) => (
-    <Tooltip content={tooltipContent}>
-      <span
-        className="px-1.5 py-0.5 rounded bg-bg-secondary text-text-primary text-2xs cursor-pointer hover:bg-bg-secondary-light transition-colors"
-        onClick={onClick}
-      >
-        {children}
-      </span>
-    </Tooltip>
-  );
+const renderBadge = (tooltipContent: React.ReactNode, onClick: () => void, children: React.ReactNode) =>
 ⋮----
-const renderButtonBadge = (tooltipContent: string, onClick: () => void, children: React.ReactNode) => (
-    <Tooltip content={tooltipContent}>
-      <button
-        type="button"
-        className="px-1.5 py-0.5 rounded bg-bg-secondary text-text-muted-light text-2xs cursor-pointer hover:bg-bg-secondary-light transition-colors"
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    </Tooltip>
-  );
+const renderButtonBadge = (tooltipContent: string, onClick: () => void, children: React.ReactNode) =>
 
 ================
 File: src/renderer/src/components/PromptField/AudioAnalyzer.tsx
@@ -19124,7 +19250,7 @@ type Props = {
   width?: number;
 };
 ⋮----
-export const AudioAnalyzer = (
+export const AudioAnalyzer = ({ stream, barCount = 16, width = 48 }: Props) =>
 ⋮----
 // fftSize must be a power of 2 between 32 and 32768
 // The number of frequency bins is fftSize / 2
@@ -19177,7 +19303,7 @@ type Props = {
   description?: ReactNode;
 };
 ⋮----
-export const CommandSuggestion = (
+export const CommandSuggestion = ({ command, description }: Props) =>
 
 ================
 File: src/renderer/src/components/PromptField/EditFormatSelector.tsx
@@ -19203,20 +19329,7 @@ type Props = {
 ⋮----
 const handleFormatSelected = (format: EditFormat) =>
 ⋮----
-const renderFormatItem = (format: EditFormat, index: number) => (
-    <div
-      key={format}
-      ref={index === state.highlightedIndex ? highlightedItemRef : undefined}
-      className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${index === state.highlightedIndex ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
-    >
-      <button
-        onClick={() => handleFormatSelected(format)}
-        className={`flex-grow px-3 py-1 text-left text-xs ${format === currentFormat ? 'text-text-primary font-bold' : ''}`}
-      >
-        {format}
-      </button>
-    </div>
-  );
+const renderFormatItem = (format: EditFormat, index: number) =>
 
 ================
 File: src/renderer/src/components/PromptField/index.ts
@@ -19265,7 +19378,7 @@ type Props = {
 ⋮----
 const getIconComponent = (iconName?: string): ElementType =>
 ⋮----
-const customModeToItemConfig = (mode: ModeDefinition): ItemConfig<Mode> => (
+const customModeToItemConfig = (mode: ModeDefinition): ItemConfig<Mode> =>
 
 ================
 File: src/renderer/src/components/PromptField/PromptField.tsx
@@ -19403,7 +19516,13 @@ ref=
 ⋮----
 className=
 ⋮----
-onClose=
+className={clsx(
+                    'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
+                    isRecording ? 'text-accent-primary animate-pulse' : '',
+                  )}
+                >
+⋮----
+onClose={() =>
 
 ================
 File: src/renderer/src/components/PromptField/QueuedPromptsList.tsx
@@ -19519,7 +19638,7 @@ type Props = {
   isDefaultProfile?: boolean;
 };
 ⋮----
-export const AgentProfileItem = (
+export const AgentProfileItem = ({ profile, isSelected, onClick, onCopy, onCut, onDelete, isCut, isDefaultProfile }: Props) =>
 ⋮----
 onClick=
 
@@ -19751,14 +19870,18 @@ onDelete=
 ⋮----
 {/* Temperature Column */}
 ⋮----
+onClick={() =>
+⋮----
 {/* Max Tokens Column */}
 ⋮----
 onChange=
 ⋮----
-onRemove=
-onEdit=
+onRemove={() =>
+onEdit={() =>
 ⋮----
 <Button onClick=
+⋮----
+onClick={(e) =>
 
 ================
 File: src/renderer/src/components/settings/agent/BashToolItem.tsx
@@ -19869,7 +19992,12 @@ const handleAddServer = () =>
 ⋮----
 const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
 ⋮----
-placeholder=
+placeholder={t('mcpServer.pasteServerAs', {
+          example: MCP_SERVER_EXAMPLE_JSON,
+          exampleNoParent: MCP_SERVER_EXAMPLE_NO_PARENT,
+          exampleBare: MCP_SERVER_EXAMPLE_BARE,
+        })}
+        value=
 
 ================
 File: src/renderer/src/components/settings/agent/McpServerItem.tsx
@@ -19950,7 +20078,7 @@ type SortableAgentProfileItemProps = {
   isDefaultProfile?: boolean;
 };
 ⋮----
-export const SortableAgentProfileItem = (
+export const SortableAgentProfileItem = ({ profile, isSelected, onClick, onCopy, onCut, onDelete, isCut, isDefaultProfile }: SortableAgentProfileItemProps) =>
 
 ================
 File: src/renderer/src/components/settings/AboutSettings.tsx
@@ -20117,7 +20245,7 @@ type Props = {
   onClose: () => void;
 };
 ⋮----
-export const ExtensionSettingsDialog = (
+export const ExtensionSettingsDialog = ({ extensionId, extensionName, projectDir, onClose }: Props) =>
 ⋮----
 // Load component definition and initial config on mount
 ⋮----
@@ -20248,7 +20376,13 @@ onUpdate=
 ⋮----
 {/* Repository Header */}
 ⋮----
-className=
+className={clsx(
+              'flex items-center justify-between px-4 py-3 cursor-pointer transition-colors',
+              'bg-gradient-to-r from-button-primary via-button-primary to-bg-tertiary',
+              'bg-[length:4px_100%,100%_100%] bg-no-repeat hover:bg-[length:4px_100%,100%_100%]',
+              'hover:to-bg-secondary-light',
+            )}
+            onClick=
 ⋮----
 onClick=
 ⋮----
@@ -20353,9 +20487,11 @@ type RecordingDialogProps = {
 ⋮----
 const handleConfirm = () =>
 ⋮----
-title=
+title={existingHotkey ? t('settings.hotkeys.editShortcut') : t('settings.hotkeys.addShortcut')}
+      onConfirm=
 ⋮----
-value=
+value={isRecording ? displayValue || t('settings.hotkeys.pressKeysToRecord') : displayValue}
+          onChange=
 ⋮----
 // Parse the value into an array of shortcuts
 ⋮----
@@ -20422,7 +20558,7 @@ type Props = {
   size?: 'sm' | 'md' | 'lg';
 };
 ⋮----
-export const LanguageSelector = (
+export const LanguageSelector = ({ language, onChange, hideLabel, size }: Props) =>
 
 ================
 File: src/renderer/src/components/settings/MemorySettings.tsx
@@ -20912,34 +21048,10 @@ type TooltipProps = {
   maxWidth?: number | string;
 };
 ⋮----
-export const TooltipProvider = ({ children, ...props }: TooltipPrimitive.TooltipProviderProps) => (
-  <TooltipPrimitive.Provider delayDuration={200} skipDelayDuration={100} {...props}>
-    {children}
-  </TooltipPrimitive.Provider>
-);
+export const TooltipProvider = ({ children, ...props }: TooltipPrimitive.TooltipProviderProps) =>
 ⋮----
 // Simple arrow component using Radix's Arrow primitive
-const Arrow = ({ side = 'top' }: { side?: string }) => (
-  <TooltipPrimitive.Arrow
-    asChild
-    width={16}
-    height={8}
-    className={clsx(
-      'overflow-visible',
-      side === 'top' && 'data-[side=top]',
-      side === 'bottom' && 'data-[side=bottom]',
-      side === 'left' && 'data-[side=left]',
-      side === 'right' && 'data-[side=right]',
-    )}
-  >
-    <svg width="16" height="8" viewBox="0 0 16 8" preserveAspectRatio="none" className="overflow-visible">
-      {/* Outer triangle with border color */}
-      <polygon points="0,0 16,0 8,8" fill={borderColor} />
-      {/* Inner triangle with background color to create border effect */}
-      <polygon points="1,0 15,0 8,7" fill="var(--color-bg-primary-light)" />
-    </svg>
-  </TooltipPrimitive.Arrow>
-);
+const Arrow = ({ side = 'top' }: { side?: string }) =>
 ⋮----
 className=
 ⋮----
@@ -20947,29 +21059,16 @@ className=
 ⋮----
 {/* Inner triangle with background color to create border effect */}
 ⋮----
-export const Tooltip = ({ content, children, side, align, delayDuration, maxWidth = '300px' }: TooltipProps) => (
-  <TooltipPrimitive.Root delayDuration={delayDuration}>
-    <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        side={side}
-        align={align}
-        className={clsx(
+export const Tooltip = ({ content, children, side, align, delayDuration, maxWidth = '300px' }: TooltipProps) =>
+⋮----
+className={clsx(
           'relative',
           '!bg-bg-primary-light !text-text-secondary !text-2xs !py-1.5 !px-2.5 !opacity-100',
           '!rounded-md z-50 whitespace-pre-wrap select-none',
           // Use CSS border instead of outline
           'border',
         )}
-        style={{ borderColor, maxWidth }}
-        sideOffset={8}
-      >
-        {content}
-        <Arrow side={side} />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  </TooltipPrimitive.Root>
-);
+        style=
 ⋮----
 // Use CSS border instead of outline
 
@@ -21177,7 +21276,11 @@ const handleRefresh = () =>
 ⋮----
 label=
 ⋮----
-className=
+className={clsx(
+                  'px-3 py-1 text-sm rounded transition-colors duration-200',
+                  selectedPeriod === period.value ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
+                )}
+              >
 ⋮----
 {/* Tab Navigation */}
 ⋮----
@@ -21262,9 +21365,15 @@ const handleOnPaste = async (e: ClipboardEvent<HTMLInputElement>) =>
 ⋮----
 zIndex: 1000, // Ensure it's above other elements
 ⋮----
-className=
+className={clsx(
+          'w-full p-3 rounded-lg bg-bg-primary-light-strong border border-bg-tertiary-strong text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
+          inputClassName,
+        )}
+        type="text"
+        value=
 ⋮----
-placeholder=
+placeholder={placeholder ? t(placeholder) : undefined}
+        autoFocus=
 ⋮----
 {/* eslint-disable-next-line react-hooks/refs */}
 
@@ -21580,7 +21689,7 @@ type ProjectSettingsProviderProps = {
   children: ReactNode;
 };
 ⋮----
-export const ProjectSettingsProvider = (
+export const ProjectSettingsProvider = ({ baseDir, children }: ProjectSettingsProviderProps) =>
 ⋮----
 const saveProjectSettings = async (updated: Partial<ProjectSettings>) =>
 ⋮----
@@ -21615,7 +21724,7 @@ type SettingsContextType = {
   setFontSize: (fontSize: number) => void;
 };
 ⋮----
-export const SettingsProvider = (
+export const SettingsProvider = ({ children }: { children: ReactNode }) =>
 ⋮----
 const loadSettings = async () =>
 ⋮----
@@ -21802,7 +21911,7 @@ export interface DropdownStateOptions<T> {
   onCloseReset?: Partial<T>;
 }
 ⋮----
-export const useDropdownState = <T extends Record<string, unknown>>(
+export const useDropdownState = <T extends Record<string, unknown>>({ initialState, onCloseReset }: DropdownStateOptions<T>) =>
 
 ================
 File: src/renderer/src/hooks/useEffectiveEnvironmentVariable.ts
@@ -21994,7 +22103,7 @@ interface UseScrollingPausedReturn {
   };
 }
 ⋮----
-export const useScrollingPaused = (
+export const useScrollingPaused = ({ onAutoScroll, threshold = 10, bottomThreshold = 20 }: UseScrollingPausedOptions): UseScrollingPausedReturn =>
 ⋮----
 // Check if content is smaller than scroll area (no scrollbar needed)
 ⋮----
@@ -22053,7 +22162,7 @@ type UseTaskActionsParams = {
   baseDir: string;
 };
 ⋮----
-export const useTaskActions = (
+export const useTaskActions = ({ baseDir }: UseTaskActionsParams) =>
 ⋮----
 // eslint-disable-next-line no-console
 
@@ -22277,24 +22386,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const AnthropicCompatibleIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Anthropic Compatible"
-    className={`flex items-center justify-center rounded-full ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(100, 100, 125)',
-      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 0px 0px 1px inset',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.7} height={height * 0.7} xmlns="http://www.w3.org/2000/svg">
-      <title>Anthropic</title>
-      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z"></path>
-    </svg>
-  </div>
-);
+export const AnthropicCompatibleIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/AnthropicIcon.tsx
@@ -22305,23 +22397,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const AnthropicIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Anthropic"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(241, 240, 232)',
-      color: 'rgb(20, 20, 19)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>Anthropic</title>
-      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z"></path>
-    </svg>
-  </div>
-);
+export const AnthropicIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/AuggieIcon.tsx
@@ -22332,23 +22408,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const AuggieIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Auggie SDK"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(0,0,0)',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width={width * 0.7} height={height * 0.7} viewBox="0 0 512 512" fill="currentColor" className={className}>
-      <path d="M78.844 464.762c-8.453 0-15.573-1.451-21.359-4.339-5.77-2.888-10.144-7.289-13.076-13.095-2.932-5.807-4.436-12.912-4.436-21.255v-86.028c0-10.605-2.125-18.321-6.329-23.135-4.234-4.798-11.742-7.334-22.507-7.579-3.35 0-6.034-1.253-8.066-3.804C1.008 303.005 0 300.087 0 296.832c0-3.53 1.008-6.448 3.071-8.725 2.048-2.277 4.762-3.53 8.066-3.774 10.765-.26 18.273-2.781 22.507-7.579 4.235-4.798 6.329-12.392 6.329-22.752v-86.028c0-12.637 3.35-22.249 10.005-28.804 6.654-6.555 16.287-9.856 28.866-9.856H181.5c3.862 0 7.042 1.146 9.617 3.408 2.559 2.277 3.862 5.195 3.862 8.694 0 3.301-1.086 6.128-3.257 8.542-2.172 2.414-5.057 3.622-8.671 3.622H87.732c-5.413 0-9.508 1.39-12.316 4.171-2.823 2.781-4.234 7.075-4.234 12.912v86.425c0 7.579-1.551 14.455-4.623 20.644-3.07 6.204-7.181 11.063-12.316 14.623-5.134 3.53-11.137 5.302-18.07 5.302v-1.528c6.933 0 12.936 1.773 18.07 5.303 5.135 3.529 9.245 8.404 12.316 14.623 3.072 6.188 4.623 13.064 4.623 20.643v86.808c0 5.837 1.411 10.115 4.234 12.911 2.823 2.812 6.934 4.172 12.316 4.172h95.318c3.583 0 6.468 1.207 8.671 3.606 2.202 2.414 3.257 5.257 3.257 8.542s-1.272 6.097-3.862 8.511c-2.575 2.414-5.771 3.606-9.617 3.606H78.844v-.092ZM330.501 464.768c-3.862 0-7.042-1.207-9.617-3.606-2.575-2.414-3.863-5.256-3.863-8.511 0-3.255 1.086-6.128 3.258-8.542 2.171-2.414 5.057-3.606 8.671-3.606h95.317c5.414 0 9.509-1.36 12.316-4.171 2.823-2.781 4.235-7.075 4.235-12.912v-86.808c0-7.579 1.551-14.455 4.622-20.643 3.071-6.204 7.182-11.063 12.316-14.623 5.134-3.53 11.137-5.303 18.071-5.303v1.528c-6.934 0-12.937-1.772-18.071-5.302-5.134-3.53-9.245-8.404-12.316-14.623-3.071-6.189-4.622-13.065-4.622-20.644v-86.425c0-5.807-1.412-10.1-4.235-12.912-2.823-2.781-6.933-4.171-12.316-4.171H328.95c-3.583 0-6.469-1.208-8.671-3.622-2.172-2.384-3.258-5.241-3.258-8.542 0-3.529 1.272-6.417 3.863-8.694 2.559-2.277 5.755-3.407 9.617-3.407h102.654c12.58 0 22.181 3.3 28.867 9.855 6.685 6.556 10.005 16.167 10.005 28.804v86.028c0 10.36 2.125 17.969 6.328 22.752 4.235 4.798 11.742 7.334 22.507 7.579 3.351.244 6.034 1.497 8.066 3.774 2.063 2.277 3.071 5.195 3.071 8.725 0 3.301-1.008 6.189-3.071 8.695-2.032 2.521-4.762 3.804-8.066 3.804-10.765.245-18.257 2.781-22.507 7.579-4.234 4.798-6.328 12.5-6.328 23.135v86.028c0 8.358-1.474 15.418-4.437 21.255-2.962 5.837-7.305 10.176-13.076 13.095-5.785 2.888-12.905 4.339-21.359 4.339H330.501v.092Z" />
-      <path d="M356.885 329.738c18.691 0 33.846-14.929 33.846-33.342 0-18.412-15.155-33.341-33.846-33.341-18.691 0-33.846 14.929-33.846 33.341 0 18.413 15.155 33.342 33.846 33.342ZM167.305 329.738c18.691 0 33.846-14.929 33.846-33.342 0-18.412-15.155-33.341-33.846-33.341-18.691 0-33.846 14.929-33.846 33.341 0 18.413 15.155 33.342 33.846 33.342ZM244.477 32.846l-2.59 68.135c0 3.82-3.661 5.73-10.983 5.73-7.321 0-10.982-1.91-10.982-5.73-.651-16.976-1.178-30.148-1.613-39.484-.217-9.55-.434-16.35-.651-20.384-.217-4.034-.326-6.479-.326-7.32v-1.268c0-4.874 4.529-7.319 13.572-7.319 9.044 0 13.573 2.552 13.573 7.64Zm54.941 0-2.59 68.135c0 3.82-3.661 5.73-10.982 5.73-7.322 0-10.982-1.91-10.982-5.73-.652-16.976-1.179-30.148-1.613-39.484-.218-9.55-.435-16.35-.652-20.384-.217-4.034-.326-6.479-.326-7.32v-1.268c0-4.874 4.53-7.319 13.573-7.319s13.572 2.552 13.572 7.64Z" />
-    </svg>
-  </div>
-);
+export const AuggieIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/AzureIcon.tsx
@@ -22368,23 +22428,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const BedrockIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Bedrock"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundImage: 'linear-gradient(45deg, rgb(154, 216, 248), rgb(61, 143, 255), rgb(99, 80, 251))',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>Bedrock</title>
-      <path d="M13.05 15.513h3.08c.214 0 .389.177.389.394v1.82a1.704 1.704 0 011.296 1.661c0 .943-.755 1.708-1.685 1.708-.931 0-1.686-.765-1.686-1.708 0-.807.554-1.484 1.297-1.662v-1.425h-2.69v4.663a.395.395 0 01-.188.338l-2.69 1.641a.385.385 0 01-.405-.002l-4.926-3.086a.395.395 0 01-.185-.336V16.3L2.196 14.87A.395.395 0 012 14.555L2 14.528V9.406c0-.14.073-.27.192-.34l2.465-1.462V4.448c0-.129.062-.249.165-.322l.021-.014L9.77 1.058a.385.385 0 01.407 0l2.69 1.675a.395.395 0 01.185.336V7.6h3.856V5.683a1.704 1.704 0 01-1.296-1.662c0-.943.755-1.708 1.685-1.708.931 0 1.685.765 1.685 1.708 0 .807-.553 1.484-1.296 1.662v2.311a.391.391 0 01-.389.394h-4.245v1.806h6.624a1.69 1.69 0 011.64-1.313c.93 0 1.685.764 1.685 1.707 0 .943-.754 1.708-1.685 1.708a1.69 1.69 0 01-1.64-1.314H13.05v1.937h4.953l.915 1.18a1.66 1.66 0 01.84-.227c.931 0 1.685.764 1.685 1.707 0 .943-.754 1.708-1.685 1.708-.93 0-1.685-.765-1.685-1.708 0-.346.102-.668.276-.937l-.724-.935H13.05v1.806zM9.973 1.856L7.93 3.122V6.09h-.778V3.604L5.435 4.669v2.945l2.11 1.36L9.712 7.61V5.334h.778V7.83c0 .136-.07.263-.184.335L7.963 9.638v2.081l1.422 1.009-.446.646-1.406-.998-1.53 1.005-.423-.66 1.605-1.055v-1.99L5.038 8.29l-2.26 1.34v1.676l1.972-1.189.398.677-2.37 1.429V14.3l2.166 1.258 2.27-1.368.397.677-2.176 1.311V19.3l1.876 1.175 2.365-1.426.398.678-2.017 1.216 1.918 1.201 2.298-1.403v-5.78l-4.758 2.893-.4-.675 5.158-3.136V3.289L9.972 1.856zM16.13 18.47a.913.913 0 00-.908.92c0 .507.406.918.908.918a.913.913 0 00.907-.919.913.913 0 00-.907-.92zm3.63-3.81a.913.913 0 00-.908.92c0 .508.406.92.907.92a.913.913 0 00.908-.92.913.913 0 00-.908-.92zm1.555-4.99a.913.913 0 00-.908.92c0 .507.407.918.908.918a.913.913 0 00.907-.919.913.913 0 00-.907-.92zM17.296 3.1a.913.913 0 00-.907.92c0 .508.406.92.907.92a.913.913 0 00.908-.92.913.913 0 00-.908-.92z"></path>
-    </svg>
-  </div>
-);
+export const BedrockIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/CerebrasIcon.tsx
@@ -22413,23 +22457,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const DeepseekIcon = ({ width = 48, height = 48, className }: Props) => (
-  <div
-    aria-label="DeepSeek"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(77, 107, 254)',
-      color: 'white',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>DeepSeek</title>
-      <path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z"></path>
-    </svg>
-  </div>
-);
+export const DeepseekIcon = ({ width = 48, height = 48, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/GeminiCliIcon.tsx
@@ -22451,52 +22479,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const GeminiIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Gemini"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(255, 255, 255)',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg height={width * 0.75} viewBox="0 0 24 24" width={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>Gemini</title>
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill="#3186FF"
-      ></path>
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill="url(#lobe-icons-gemini-fill-0)"
-      ></path>
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill="url(#lobe-icons-gemini-fill-1)"
-      ></path>
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill="url(#lobe-icons-gemini-fill-2)"
-      ></path>
-      <defs>
-        <linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-0" x1="7" x2="11" y1="15.5" y2="12">
-          <stop stopColor="#08B962"></stop>
-          <stop offset="1" stopColor="#08B962" stopOpacity="0"></stop>
-        </linearGradient>
-        <linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-1" x1="8" x2="11.5" y1="5.5" y2="11">
-          <stop stopColor="#F94543"></stop>
-          <stop offset="1" stopColor="#F94543" stopOpacity="0"></stop>
-        </linearGradient>
-        <linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-2" x1="3.5" x2="17.5" y1="13.5" y2="12">
-          <stop stopColor="#FABC12"></stop>
-          <stop offset=".46" stopColor="#FABC12" stopOpacity="0"></stop>
-        </linearGradient>
-      </defs>
-    </svg>
-  </div>
-);
+export const GeminiIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/GpustackIcon.tsx
@@ -22509,21 +22492,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const GpustackIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="GPUStack"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'white',
-      boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <img src={gpustackIcon} width={width} height={height} className={className} alt="GPUStack" />
-  </div>
-);
+export const GpustackIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/GroqIcon.tsx
@@ -22534,23 +22503,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const GroqIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Groq"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(245, 80, 54)',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>Groq</title>
-      <path d="M12.036 2c-3.853-.035-7 3-7.036 6.781-.035 3.782 3.055 6.872 6.908 6.907h2.42v-2.566h-2.292c-2.407.028-4.38-1.866-4.408-4.23-.029-2.362 1.901-4.298 4.308-4.326h.1c2.407 0 4.358 1.915 4.365 4.278v6.305c0 2.342-1.944 4.25-4.323 4.279a4.375 4.375 0 01-3.033-1.252l-1.851 1.818A7 7 0 0012.029 22h.092c3.803-.056 6.858-3.083 6.879-6.816v-6.5C18.907 4.963 15.817 2 12.036 2z"></path>
-    </svg>
-  </div>
-);
+export const GroqIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/index.ts
@@ -22566,37 +22519,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const KimiPlanIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Kimi Plan"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: '#000000',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg
-      viewBox="0 0 512 512"
-      xmlns="http://www.w3.org/2000/svg"
-      fillRule="evenodd"
-      clipRule="evenodd"
-      strokeLinejoin="round"
-      strokeMiterlimit="2"
-      width={width}
-      height={height}
-    >
-      <path
-        d="M342.065 189.759c1.886-2.42 3.541-4.63 5.289-6.77.81-1.007.74-1.771-.046-2.824-7.58-9.965-8.298-21.028-3.935-32.254 3.275-8.448 10.52-12.406 19.373-13.25 5.52-.521 10.936.046 15.959 2.73 6.596 3.53 10.438 8.912 11.688 16.341.995 5.926.81 11.712-.868 17.452-2.974 10.161-10.277 15.427-20.287 16.758-8.31 1.11-16.734 1.25-25.113 1.817-.648.046-1.308 0-2.06 0z"
-        fill="#027aff"
-      />
-      <path
-        d="M321.512 144.254h-50.064l-39.637 90.384h-56.036v-89.99H131v232.868h44.787v-98.103h78.973c13.598 0 26.015-7.927 31.744-20.252v118.355h44.787v-98.103c0-23.342-18.239-42.97-41.523-44.671v-.116h-24.593a45.577 45.577 0 0026.884-24.534l29.453-65.838z"
-        fill="#fff"
-      />
-    </svg>
-  </div>
-);
+export const KimiPlanIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/LitellmIcon.tsx
@@ -22607,21 +22530,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const LitellmIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="LiteLLM"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: '#181638',
-      boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset',
-      color: 'rgb(0, 0, 0)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <div style={{ fontSize: `${width * 0.6}px` }}>🚅</div>
-  </div>
-);
+export const LitellmIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/LmStudioIcon.tsx
@@ -22632,27 +22541,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const LmStudioIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="LM Studio"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundImage: 'linear-gradient(135deg, rgb(108, 120, 239), rgb(79, 20, 190))',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>LM Studio</title>
-      <path
-        d="M2.84 2a1.273 1.273 0 100 2.547h14.107a1.273 1.273 0 100-2.547H2.84zM7.935 5.33a1.273 1.273 0 000 2.548H22.04a1.274 1.274 0 000-2.547H7.935zM3.624 9.935c0-.704.57-1.274 1.274-1.274h14.106a1.274 1.274 0 010 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM1.273 12.188a1.273 1.273 0 100 2.547H15.38a1.274 1.274 0 000-2.547H1.273zM3.624 16.792c0-.704.57-1.274 1.274-1.274h14.106a1.273 1.273 0 110 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM13.029 18.849a1.273 1.273 0 100 2.547h9.698a1.273 1.273 0 100-2.547h-9.698z"
-        fillOpacity=".3"
-      ></path>
-      <path d="M2.84 2a1.273 1.273 0 100 2.547h10.287a1.274 1.274 0 000-2.547H2.84zM7.935 5.33a1.273 1.273 0 000 2.548H18.22a1.274 1.274 0 000-2.547H7.935zM3.624 9.935c0-.704.57-1.274 1.274-1.274h10.286a1.273 1.273 0 010 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM1.273 12.188a1.273 1.273 0 100 2.547H11.56a1.274 1.274 0 000-2.547H1.273zM3.624 16.792c0-.704.57-1.274 1.274-1.274h10.286a1.273 1.273 0 110 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM13.029 18.849a1.273 1.273 0 100 2.547h5.78a1.273 1.273 0 100-2.547h-5.78z"></path>
-    </svg>
-  </div>
-);
+export const LmStudioIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/MinimaxIcon.tsx
@@ -22663,31 +22552,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const MinimaxIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Minimax"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      background: 'linear-gradient(to right, rgb(226, 22, 126), rgb(254, 96, 60))',
-      color: 'white',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg
-      className="-ml-[2px]"
-      fill="currentColor"
-      fillRule="evenodd"
-      viewBox="0 0 24 24"
-      width={width * 0.75}
-      height={height * 0.75}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <title>Minimax</title>
-      <path d="M16.278 2c1.156 0 2.093.927 2.093 2.07v12.501a.74.74 0 00.744.709.74.74 0 00.743-.709V9.099a2.06 2.06 0 012.071-2.049A2.06 2.06 0 0124 9.1v6.561a.649.649 0 01-.652.645.649.649 0 01-.653-.645V9.1a.762.762 0 00-.766-.758.762.762 0 00-.766.758v7.472a2.037 2.037 0 01-2.048 2.026 2.037 2.037 0 01-2.048-2.026v-12.5a.785.785 0 00-.788-.753.785.785 0 00-.789.752l-.001 15.904A2.037 2.037 0 0113.441 22a2.037 2.037 0 01-2.048-2.026V18.04c0-.356.292-.645.652-.645.36 0 .652.289.652.645v1.934c0 .263.142.506.372.638.23.131.514.131.744 0a.734.734 0 00.372-.638V4.07c0-1.143.937-2.07 2.093-2.07zm-5.674 0c1.156 0 2.093.927 2.093 2.07v11.523a.648.648 0 01-.652.645.648.648 0 01-.652-.645V4.07a.785.785 0 00-.789-.78.785.785 0 00-.789.78v14.013a2.06 2.06 0 01-2.07 2.048 2.06 2.06 0 01-2.071-2.048V9.1a.762.762 0 00-.766-.758.762.762 0 00-.766.758v3.8a2.06 2.06 0 01-2.071 2.049A2.06 2.06 0 010 12.9v-1.378c0-.357.292-.646.652-.646.36 0 .653.29.653.646V12.9c0 .418.343.757.766.757s.766-.339.766-.757V9.099a2.06 2.06 0 012.07-2.048 2.06 2.06 0 012.071 2.048v8.984c0 .419.343.758.767.758.423 0 .766-.339.766-.758V4.07c0-1.143.937-2.07 2.093-2.07z"></path>
-    </svg>
-  </div>
-);
+export const MinimaxIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/OllamaIcon.tsx
@@ -22698,23 +22563,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const OllamaIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Ollama"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(255, 255, 255)',
-      color: 'rgb(0, 0, 0)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>Ollama</title>
-      <path d="M7.905 1.09c.216.085.411.225.588.41.295.306.544.744.734 1.263.191.522.315 1.1.362 1.68a5.054 5.054 0 012.049-.636l.051-.004c.87-.07 1.73.087 2.48.474.101.053.2.11.297.17.05-.569.172-1.134.36-1.644.19-.52.439-.957.733-1.264a1.67 1.67 0 01.589-.41c.257-.1.53-.118.796-.042.401.114.745.368 1.016.737.248.337.434.769.561 1.287.23.934.27 2.163.115 3.645l.053.04.026.019c.757.576 1.284 1.397 1.563 2.35.435 1.487.216 3.155-.534 4.088l-.018.021.002.003c.417.762.67 1.567.724 2.4l.002.03c.064 1.065-.2 2.137-.814 3.19l-.007.01.01.024c.472 1.157.62 2.322.438 3.486l-.006.039a.651.651 0 01-.747.536.648.648 0 01-.54-.742c.167-1.033.01-2.069-.48-3.123a.643.643 0 01.04-.617l.004-.006c.604-.924.854-1.83.8-2.72-.046-.779-.325-1.544-.8-2.273a.644.644 0 01.18-.886l.009-.006c.243-.159.467-.565.58-1.12a4.229 4.229 0 00-.095-1.974c-.205-.7-.58-1.284-1.105-1.683-.595-.454-1.383-.673-2.38-.61a.653.653 0 01-.632-.371c-.314-.665-.772-1.141-1.343-1.436a3.288 3.288 0 00-1.772-.332c-1.245.099-2.343.801-2.67 1.686a.652.652 0 01-.61.425c-1.067.002-1.893.252-2.497.703-.522.39-.878.935-1.066 1.588a4.07 4.07 0 00-.068 1.886c.112.558.331 1.02.582 1.269l.008.007c.212.207.257.53.109.785-.36.622-.629 1.549-.673 2.44-.05 1.018.186 1.902.719 2.536l.016.019a.643.643 0 01.095.69c-.576 1.236-.753 2.252-.562 3.052a.652.652 0 01-1.269.298c-.243-1.018-.078-2.184.473-3.498l.014-.035-.008-.012a4.339 4.339 0 01-.598-1.309l-.005-.019a5.764 5.764 0 01-.177-1.785c.044-.91.278-1.842.622-2.59l.012-.026-.002-.002c-.293-.418-.51-.953-.63-1.545l-.005-.024a5.352 5.352 0 01.093-2.49c.262-.915.777-1.701 1.536-2.269.06-.045.123-.09.186-.132-.159-1.493-.119-2.73.112-3.67.127-.518.314-.95.562-1.287.27-.368.614-.622 1.015-.737.266-.076.54-.059.797.042zm4.116 9.09c.936 0 1.8.313 2.446.855.63.527 1.005 1.235 1.005 1.94 0 .888-.406 1.58-1.133 2.022-.62.375-1.451.557-2.403.557-1.009 0-1.871-.259-2.493-.734-.617-.47-.963-1.13-.963-1.845 0-.707.398-1.417 1.056-1.946.668-.537 1.55-.849 2.485-.849zm0 .896a3.07 3.07 0 00-1.916.65c-.461.37-.722.835-.722 1.25 0 .428.21.829.61 1.134.455.347 1.124.548 1.943.548.799 0 1.473-.147 1.932-.426.463-.28.7-.686.7-1.257 0-.423-.246-.89-.683-1.256-.484-.405-1.14-.643-1.864-.643zm.662 1.21l.004.004c.12.151.095.37-.056.49l-.292.23v.446a.375.375 0 01-.376.373.375.375 0 01-.376-.373v-.46l-.271-.218a.347.347 0 01-.052-.49.353.353 0 01.494-.051l.215.172.22-.174a.353.353 0 01.49.051zm-5.04-1.919c.478 0 .867.39.867.871a.87.87 0 01-.868.871.87.87 0 01-.867-.87.87.87 0 01.867-.872zm8.706 0c.48 0 .868.39.868.871a.87.87 0 01-.868.871.87.87 0 01-.867-.87.87.87 0 01.867-.872zM7.44 2.3l-.003.002a.659.659 0 00-.285.238l-.005.006c-.138.189-.258.467-.348.832-.17.692-.216 1.631-.124 2.782.43-.128.899-.208 1.404-.237l.01-.001.019-.034c.046-.082.095-.161.148-.239.123-.771.022-1.692-.253-2.444-.134-.364-.297-.65-.453-.813a.628.628 0 00-.107-.09L7.44 2.3zm9.174.04l-.002.001a.628.628 0 00-.107.09c-.156.163-.32.45-.453.814-.29.794-.387 1.776-.23 2.572l.058.097.008.014h.03a5.184 5.184 0 011.466.212c.086-1.124.038-2.043-.128-2.722-.09-.365-.21-.643-.349-.832l-.004-.006a.659.659 0 00-.285-.239h-.004z"></path>
-    </svg>
-  </div>
-);
+export const OllamaIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/OpenAiCompatibleIcon.tsx
@@ -22734,24 +22583,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const OpenAiIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="OpenAI"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(0, 0, 0)',
-      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 0px 0px 1px inset',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>OpenAI</title>
-      <path d="M21.55 10.004a5.416 5.416 0 00-.478-4.501c-1.217-2.09-3.662-3.166-6.05-2.66A5.59 5.59 0 0010.831 1C8.39.995 6.224 2.546 5.473 4.838A5.553 5.553 0 001.76 7.496a5.487 5.487 0 00.691 6.5 5.416 5.416 0 00.477 4.502c1.217 2.09 3.662 3.165 6.05 2.66A5.586 5.586 0 0013.168 23c2.443.006 4.61-1.546 5.361-3.84a5.553 5.553 0 003.715-2.66 5.488 5.488 0 00-.693-6.497v.001zm-8.381 11.558a4.199 4.199 0 01-2.675-.954c.034-.018.093-.05.132-.074l4.44-2.53a.71.71 0 00.364-.623v-6.176l1.877 1.069c.02.01.033.029.036.05v5.115c-.003 2.274-1.87 4.118-4.174 4.123zM4.192 17.78a4.059 4.059 0 01-.498-2.763c.032.02.09.055.131.078l4.44 2.53c.225.13.504.13.73 0l5.42-3.088v2.138a.068.068 0 01-.027.057L9.9 19.288c-1.999 1.136-4.552.46-5.707-1.51h-.001zM3.023 8.216A4.15 4.15 0 015.198 6.41l-.002.151v5.06a.711.711 0 00.364.624l5.42 3.087-1.876 1.07a.067.067 0 01-.063.005l-4.489-2.559c-1.995-1.14-2.679-3.658-1.53-5.63h.001zm15.417 3.54l-5.42-3.088L14.896 7.6a.067.067 0 01.063-.006l4.489 2.557c1.998 1.14 2.683 3.662 1.529 5.633a4.163 4.163 0 01-2.174 1.807V12.38a.71.71 0 00-.363-.623zm1.867-2.773a6.04 6.04 0 00-.132-.078l-4.44-2.53a.731.731 0 00-.729 0l-5.42 3.088V7.325a.068.068 0 01.027-.057L14.1 4.713c2-1.137 4.555-.46 5.707 1.513.487.833.664 1.809.499 2.757h.001zm-11.741 3.81l-1.877-1.068a.065.065 0 01-.036-.051V6.559c.001-2.277 1.873-4.122 4.181-4.12.976 0 1.92.338 2.671.954-.034.018-.092.05-.131.073l-4.44 2.53a.71.71 0 00-.365.623l-.003 6.173v.002zm1.02-2.168L12 9.25l2.414 1.375v2.75L12 14.75l-2.415-1.375v-2.75z"></path>
-    </svg>
-  </div>
-);
+export const OpenAiIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/OpenCodeIcon.tsx
@@ -22762,23 +22594,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const OpenCodeIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="OpenCode ZEN"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: '#131010',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg width={width * 0.95} height={height * 0.95} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M320 224V352H192V224H320Z" fill="#5A5858"></path>
-      <path fillRule="evenodd" clipRule="evenodd" d="M384 416H128V96H384V416ZM320 160H192V352H320V160Z" fill="white"></path>
-    </svg>
-  </div>
-);
+export const OpenCodeIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/OpenRouterIcon.tsx
@@ -22789,23 +22605,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const OpenRouterIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="OpenRouter"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(101, 102, 241)',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>OpenRouter</title>
-      <path d="M16.804 1.957l7.22 4.105v.087L16.73 10.21l.017-2.117-.821-.03c-1.059-.028-1.611.002-2.268.11-1.064.175-2.038.577-3.147 1.352L8.345 11.03c-.284.195-.495.336-.68.455l-.515.322-.397.234.385.23.53.338c.476.314 1.17.796 2.701 1.866 1.11.775 2.083 1.177 3.147 1.352l.3.045c.694.091 1.375.094 2.825.033l.022-2.159 7.22 4.105v.087L16.589 22l.014-1.862-.635.022c-1.386.042-2.137.002-3.138-.162-1.694-.28-3.26-.926-4.881-2.059l-2.158-1.5a21.997 21.997 0 00-.755-.498l-.467-.28a55.927 55.927 0 00-.76-.43C2.908 14.73.563 14.116 0 14.116V9.888l.14.004c.564-.007 2.91-.622 3.809-1.124l1.016-.58.438-.274c.428-.28 1.072-.726 2.686-1.853 1.621-1.133 3.186-1.78 4.881-2.059 1.152-.19 1.974-.213 3.814-.138l.02-1.907z"></path>
-    </svg>
-  </div>
-);
+export const OpenRouterIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/RequestyIcon.tsx
@@ -22827,83 +22627,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const SyntheticIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="Synthetic"
-    className={`flex items-center justify-center rounded-md relative ${className || ''}`}
-    style={{
-      backgroundColor: 'white',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg
-      width={width * 0.8}
-      height={height * 0.8}
-      viewBox="0 0 54 54"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-    >
-      <path
-        d="M27.8517 26.3314C27.8439 26.1451 27.8371 25.9303 27.8337 25.692C27.8203 24.7571 27.8545 23.4581 28.0457 22.0052C28.4322 19.0688 29.4394 15.6521 31.8222 13.2693C34.205 10.8867 37.6212 9.87992 40.5575 9.49344C42.0107 9.30219 43.3101 9.26734 44.245 9.28076C44.4829 9.28417 44.6968 9.29231 44.883 9.30009C44.8908 9.48595 44.8975 9.69933 44.901 9.93676C44.9144 10.8716 44.8795 12.171 44.6883 13.6242C44.3018 16.5605 43.2958 19.9773 40.9131 22.3602C38.5303 24.743 35.1129 25.7495 32.1765 26.136C30.7234 26.3272 29.4246 26.3614 28.4897 26.348C28.2518 26.3446 28.0378 26.3392 27.8517 26.3314Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M27.8916 27.1592C28.0179 27.0219 28.165 26.8653 28.3311 26.6943C28.9826 26.0238 29.9253 25.1295 31.0879 24.2373C33.4375 22.4342 36.5658 20.7305 39.9355 20.7305C43.3051 20.7306 46.4327 22.4343 48.7822 24.2373C49.945 25.1296 50.8885 26.0238 51.54 26.6943C51.7059 26.865 51.8514 27.022 51.9775 27.1592C51.8516 27.2961 51.7055 27.4518 51.54 27.6221C50.8885 28.2926 49.945 29.1868 48.7822 30.0791C46.4327 31.8821 43.3052 33.5868 39.9355 33.5869C36.5657 33.5869 33.4375 31.8822 31.0879 30.0791C29.9252 29.1868 28.9826 28.2926 28.3311 27.6221C28.1652 27.4514 28.0177 27.2963 27.8916 27.1592Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M27.4459 27.6915C27.6323 27.6837 27.8471 27.677 28.0854 27.6736C29.0202 27.6602 30.3192 27.6943 31.7721 27.8856C34.7085 28.272 38.1253 29.2793 40.5081 31.6621C42.8906 34.0448 43.8974 37.4611 44.2839 40.3973C44.4752 41.8505 44.51 43.1499 44.4966 44.0848C44.4932 44.3228 44.485 44.5367 44.4773 44.7229C44.2914 44.7306 44.078 44.7374 43.8406 44.7408C42.9057 44.7542 41.6063 44.7194 40.1531 44.5281C37.2168 44.1417 33.8 43.1356 31.4172 40.753C29.0343 38.3701 28.0278 34.9528 27.6413 32.0163C27.4501 30.5633 27.4159 29.2644 27.4294 28.3296C27.4328 28.0916 27.4381 27.8777 27.4459 27.6915Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M26.916 28.1289C27.0533 28.2552 27.2099 28.4023 27.3809 28.5684C28.0514 29.2199 28.9457 30.1626 29.8379 31.3252C31.641 33.6748 33.3447 36.8031 33.3447 40.1728C33.3446 43.5424 31.6409 46.67 29.8379 49.0195C28.9456 50.1823 28.0514 51.1258 27.3809 51.7773C27.2102 51.9432 27.0532 52.0887 26.916 52.2148C26.7791 52.0889 26.6234 51.9428 26.4531 51.7773C25.7826 51.1258 24.8884 50.1823 23.9961 49.0195C22.1931 46.67 20.4884 43.5426 20.4883 40.1728C20.4883 36.803 22.193 33.6748 23.9961 31.3252C24.8884 30.1625 25.7826 29.2199 26.4531 28.5684C26.6238 28.4025 26.7789 28.255 26.916 28.1289Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M26.2147 27.691C26.2225 27.8774 26.2293 28.0922 26.2327 28.3305C26.2461 29.2653 26.2119 30.5643 26.0207 32.0172C25.6342 34.9536 24.627 38.3704 22.2442 40.7532C19.8614 43.1357 16.4452 44.1425 13.5089 44.529C12.0557 44.7203 10.7563 44.7551 9.82145 44.7417C9.58349 44.7383 9.36957 44.7301 9.1834 44.7224C9.17564 44.5365 9.16886 44.3231 9.16545 44.0857C9.15203 43.1508 9.18689 41.8514 9.37813 40.3982C9.76458 37.4619 10.7706 34.0451 13.1533 31.6623C15.5361 29.2795 18.9535 28.2729 21.8899 27.8865C23.343 27.6952 24.6419 27.6611 25.5767 27.6745C25.8146 27.6779 26.0286 27.6833 26.2147 27.691Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M25.7021 27.1602C25.5759 27.2974 25.4288 27.4541 25.2627 27.625C24.6111 28.2955 23.6684 29.1899 22.5059 30.082C20.1562 31.8851 17.028 33.5889 13.6582 33.5889C10.2886 33.5887 7.16105 31.885 4.81153 30.082C3.64873 29.1897 2.70529 28.2955 2.05372 27.625C1.88786 27.4543 1.74236 27.2973 1.61622 27.1602C1.74215 27.0232 1.88824 26.8676 2.05372 26.6973C2.70527 26.0267 3.64874 25.1326 4.81153 24.2402C7.16108 22.4372 10.2885 20.7326 13.6582 20.7324C17.0281 20.7324 20.1562 22.4371 22.5059 24.2402C23.6686 25.1325 24.6112 26.0268 25.2627 26.6973C25.4285 26.8679 25.576 27.023 25.7021 27.1602Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M25.7338 25.9813C25.5474 25.9891 25.3326 25.9959 25.0943 25.9993C24.1595 26.0127 22.8605 25.9785 21.4076 25.7873C18.4712 25.4008 15.0544 24.3936 12.6716 22.0108C10.2891 19.628 9.28226 16.2118 8.89579 13.2755C8.70453 11.8223 8.66969 10.5229 8.6831 9.58806C8.68652 9.35009 8.69466 9.13618 8.70244 8.95C8.8883 8.94224 9.10168 8.93546 9.33911 8.93205C10.274 8.91863 11.5734 8.95349 13.0266 9.14473C15.9629 9.53118 19.3797 10.5372 21.7625 12.9199C24.1454 15.3027 25.1519 18.7201 25.5383 21.6565C25.7296 23.1096 25.7638 24.4085 25.7503 25.3433C25.7469 25.5812 25.7415 25.7952 25.7338 25.9813Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-      <path
-        d="M26.9121 25.7031C26.7748 25.5769 26.6182 25.4298 26.4473 25.2637C25.7768 24.6121 24.8824 23.6694 23.9902 22.5068C22.1872 20.1572 20.4834 17.029 20.4834 13.6592C20.4835 10.2896 22.1873 7.16203 23.9902 4.8125C24.8826 3.6497 25.7767 2.70627 26.4473 2.05469C26.618 1.88883 26.775 1.74333 26.9121 1.61719C27.049 1.74312 27.2047 1.88921 27.375 2.05469C28.0455 2.70624 28.9397 3.64971 29.832 4.8125C31.6351 7.16206 33.3397 10.2895 33.3398 13.6592C33.3398 17.029 31.6351 20.1572 29.832 22.5068C28.9398 23.6695 28.0455 24.6121 27.375 25.2637C27.2043 25.4295 27.0492 25.577 26.9121 25.7031Z"
-        stroke="black"
-        strokeWidth="2.5"
-      ></path>
-    </svg>
-    <svg
-      width={width * 0.25}
-      height={height * 0.25}
-      viewBox="0 0 19 19"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-    >
-      <path
-        d="M8.56067 1.3799L10.4618 1.34671C10.5492 1.34522 10.6286 1.38935 10.6747 1.45923L10.7093 1.53774L11.045 2.92076C11.1559 3.37707 11.4798 3.75232 11.9152 3.92819C12.3419 4.10041 12.8251 4.0605 13.2183 3.82145L14.3036 3.16178C14.3771 3.11703 14.4662 3.1144 14.5407 3.14983L14.6099 3.19745L15.9965 4.57385C16.0577 4.63461 16.0825 4.72126 16.0659 4.80217L16.035 4.88085L15.4788 5.80573C15.2386 6.20505 15.1867 6.68631 15.3299 7.12299L15.4034 7.30728C15.5966 7.71593 15.9524 8.02086 16.3793 8.15073L16.5666 8.19532L17.4238 8.34639C17.5414 8.36729 17.628 8.46852 17.6302 8.58794L17.6642 10.533C17.6662 10.6479 17.5891 10.7499 17.478 10.7794L16.3785 11.0721C15.9508 11.1859 15.5956 11.4767 15.399 11.8666L15.3249 12.0398C15.1648 12.4858 15.2187 12.9804 15.4714 13.3812L16.0028 14.2246C16.0497 14.2991 16.0532 14.3908 16.0168 14.4666L15.9672 14.5358L14.5394 15.9448C14.4825 16.0008 14.4038 16.025 14.3277 16.0139L14.2531 15.9908L13.2136 15.4747C12.8594 15.2989 12.4528 15.2697 12.0801 15.388L11.9219 15.4474C11.5639 15.6067 11.2838 15.8977 11.1361 16.2562L11.0812 16.4134L10.7617 17.5217C10.7312 17.6271 10.6352 17.7006 10.5255 17.7026L8.58735 17.7364C8.46855 17.7385 8.36456 17.6565 8.33878 17.5405L8.08316 16.3817L8.03422 16.2078C7.91462 15.8694 7.67485 15.5859 7.36105 15.4118L7.19756 15.3345L7.04329 15.2815C6.73077 15.1941 6.39776 15.2128 6.0968 15.3342L5.94955 15.4032L4.77293 16.0371C4.6979 16.0774 4.60969 16.0756 4.53755 16.0373L4.47222 15.9877L3.13752 14.5596C3.0776 14.4954 3.05736 14.4064 3.07873 14.3252L3.11353 14.2484L3.7373 13.3331C3.98342 12.9717 4.04895 12.5208 3.923 12.109L3.85746 11.9353L3.78169 11.7911C3.61486 11.5129 3.35814 11.2998 3.05423 11.1865L2.89807 11.1374L1.49728 10.7907C1.38749 10.7635 1.30969 10.6659 1.30755 10.5528L1.27503 8.6898C1.27334 8.58474 1.33722 8.49154 1.43207 8.45363L1.47385 8.44118L2.69615 8.18641C3.14512 8.09283 3.52318 7.80066 3.72943 7.39873L3.80738 7.2196C3.94662 6.83155 3.92084 6.40585 3.73992 6.04091L3.6523 5.8891L3.04806 4.9581C2.98255 4.85725 2.99751 4.72403 3.08453 4.64101L4.58516 3.20932C4.67146 3.12699 4.80459 3.11666 4.90217 3.18523L5.71797 3.75897C6.12951 4.04818 6.65895 4.11193 7.1274 3.92874C7.53749 3.76829 7.85309 3.43752 7.99657 3.02769L8.04812 2.84707L8.32092 1.57747C8.34533 1.46387 8.44449 1.38193 8.56067 1.3799Z"
-        fill="white"
-        stroke="black"
-        strokeWidth="1.5"
-      ></path>
-      <circle cx="9.46694" cy="9.5416" r="2.53895" transform="rotate(-1 9.46694 9.5416)" fill="white" stroke="black" strokeWidth="1.5"></circle>
-    </svg>
-  </div>
-);
+export const SyntheticIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/VertexAiIcon.tsx
@@ -22914,33 +22638,7 @@ type Props = {
   className?: string;
 };
 ⋮----
-export const VertexAiIcon = ({ width = 64, height = 64, className }: Props) => (
-  <div
-    aria-label="VertexAI"
-    className={`flex items-center justify-center rounded-md ${className || ''}`}
-    style={{
-      backgroundColor: 'rgb(66, 133, 244)',
-      color: 'rgb(255, 255, 255)',
-      height: `${height}px`,
-      width: `${width}px`,
-    }}
-  >
-    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
-      <title>VertexAI</title>
-      <path d="M11.995 20.216a1.892 1.892 0 100 3.785 1.892 1.892 0 000-3.785zm0 2.806a.927.927 0 11.927-.914.914.914 0 01-.927.914z"></path>
-      <path
-        clipRule="evenodd"
-        d="M21.687 14.144c.237.038.452.16.605.344a.978.978 0 01-.18 1.3l-8.24 6.082a1.892 1.892 0 00-1.147-1.508l8.28-6.08a.991.991 0 01.682-.138z"
-      ></path>
-      <path clipRule="evenodd" d="M10.122 21.842l-8.217-6.066a.952.952 0 01-.206-1.287.978.978 0 011.287-.206l8.28 6.08a1.893 1.893 0 00-1.144 1.479z"></path>
-      <path d="M4.273 4.475a.978.978 0 01-.965-.965V1.09a.978.978 0 111.943 0v2.42a.978.978 0 01-.978.965zM4.247 13.034a.978.978 0 100-1.956.978.978 0 000 1.956zM4.247 10.19a.978.978 0 100-1.956.978.978 0 000 1.956zM4.247 7.332a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
-      <path d="M19.718 7.307a.978.978 0 01-.965-.979v-2.42a.965.965 0 011.93 0v2.42a.964.964 0 01-.965.979zM19.743 13.047a.978.978 0 100-1.956.978.978 0 000 1.956zM19.743 10.151a.978.978 0 100-1.956.978.978 0 000 1.956zM19.743 2.068a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
-      <path d="M11.995 15.917a.978.978 0 01-.965-.965v-2.459a.978.978 0 011.943 0v2.433a.976.976 0 01-.978.991zM11.995 18.762a.978.978 0 100-1.956.978.978 0 000 1.956zM11.995 10.64a.978.978 0 100-1.956.978.978 0 000 1.956zM11.995 7.783a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
-      <path d="M15.856 10.177a.978.978 0 01-.965-.965v-2.42a.977.977 0 011.702-.763.979.979 0 01.241.763v2.42a.978.978 0 01-.978.965zM15.869 4.913a.978.978 0 100-1.956.978.978 0 000 1.956zM15.869 15.853a.978.978 0 100-1.956.978.978 0 000 1.956zM15.869 12.996a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
-      <path d="M8.121 15.853a.978.978 0 100-1.956.978.978 0 000 1.956zM8.121 7.783a.978.978 0 100-1.956.978.978 0 000 1.956zM8.121 4.913a.978.978 0 100-1.957.978.978 0 000 1.957zM8.134 12.996a.978.978 0 01-.978-.94V9.611a.965.965 0 011.93 0v2.445a.966.966 0 01-.952.94z"></path>
-    </svg>
-  </div>
-);
+export const VertexAiIcon = ({ width = 64, height = 64, className }: Props) =>
 
 ================
 File: src/renderer/src/icons/ZaiPlanIcon.tsx
@@ -23046,7 +22744,7 @@ const handleKeyUp = (e: KeyboardEvent) =>
 ⋮----
 const handleAddProject = async (baseDir: string) =>
 ⋮----
-const renderProjectPanels = ()
+const renderProjectPanels = () =>
 ⋮----
 const getUpdateTooltip = () =>
 ⋮----
@@ -23123,7 +22821,7 @@ const handleFinish = async () =>
 {/* Stepper */}
 ⋮----
 {/* Step Content */}
-
+{renderStep()}
 ⋮----
 {/* Navigation Buttons */}
 
@@ -23249,9 +22947,9 @@ import { shallow } from 'zustand/vanilla/shallow';
 import { ExtensionUIComponent, ExtensionUIRefreshData } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 ⋮----
-const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string
+const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string =>
 ⋮----
-const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string
+const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string =>
 ⋮----
 interface ExtensionUIState {
   componentsMap: Map<string, ExtensionUIComponent[]>;
@@ -23350,9 +23048,9 @@ interface ProjectStore {
   clearProjectTasks: (projectBaseDir: string) => void;
 }
 ⋮----
-export const useProjectTasks = (projectBaseDir: string)
+export const useProjectTasks = (projectBaseDir: string) =>
 ⋮----
-export const useProjectProcessingState = (projectBaseDir: string)
+export const useProjectProcessingState = (projectBaseDir: string) =>
 
 ================
 File: src/renderer/src/stores/taskStore.ts
@@ -23394,9 +23092,9 @@ interface TaskStore {
 ⋮----
 // we are already in a pending state, no need to update
 ⋮----
-export const useTaskState = (taskId: string)
+export const useTaskState = (taskId: string) =>
 ⋮----
-export const useTaskMessages = (taskId: string)
+export const useTaskMessages = (taskId: string) =>
 
 ================
 File: src/renderer/src/themes/theme-aurora.scss
@@ -25391,7 +25089,7 @@ async clearExpired(storeName: string, ttlMs: number): Promise<void>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-async getAll<T>(storeName: string): Promise<Array<
+async getAll<T>(storeName: string): Promise<Array<{ id: string; data: T; updatedAt: number }>>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -25404,7 +25102,7 @@ import { toast } from 'react-toastify';
 ⋮----
 import type { ToastOptions } from 'react-toastify';
 ⋮----
-const getOptions = (): ToastOptions => (
+const getOptions = (): ToastOptions =>
 ⋮----
 export const showSuccessNotification = (message: string) =>
 ⋮----
@@ -25708,10 +25406,48 @@ interface Window {
 File: src/renderer/src/fonts.css
 ================
 @font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
+⋮----
+@font-face {
 
 ================
 File: src/renderer/src/main.css
 ================
+@import './fonts.css';
+⋮----
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -25733,6 +25469,9 @@ body {
 * {
 ⋮----
 code {
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 ⋮----
 .cm-fat-cursor {
 ⋮----
